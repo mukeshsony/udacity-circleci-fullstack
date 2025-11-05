@@ -21,16 +21,14 @@ jobs:
             - v3-frontend-node-
 
       - run:
-          name: 📦 Install Frontend Dependencies
+          name: 📦 Clean Install Frontend Dependencies
           command: |
             echo "📂 Listing root directory contents:"
             ls -la
             echo "=========================================="
-            echo "📦 Installing frontend dependencies..."
-            echo "=========================================="
+            echo "📦 Cleaning node_modules and installing frontend dependencies..."
             cd web-app
-            echo "Node version: $(node -v)"
-            echo "NPM version: $(npm -v)"
+            rm -rf node_modules
             npm install
             echo "✅ Dependencies installed."
             echo "📂 Checking node_modules/.bin:"
@@ -97,7 +95,7 @@ jobs:
             echo "📦 Installing backend dependencies..."
             echo "=========================================="
             cd web-api
-            npm install
+            npm ci
             echo "✅ Dependencies installed."
 
       - save_cache:
