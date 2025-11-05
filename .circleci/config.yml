@@ -49,10 +49,15 @@ jobs:
             echo "🧪 Running frontend unit tests..."
             echo "=========================================="
             cd web-app
-            export CHROME_BIN=$(which google-chrome)
+            export CHROME_BIN=$(which google-chrome-stable || which google-chrome)
             echo "Chrome binary: $CHROME_BIN"
-            echo "Angular CLI version: $(ng version)"
+            echo "Checking Angular CLI:"
+            ls -lh node_modules/.bin/ng
+            npx ng version
+            echo ""
+            echo "Running tests..."
             npm run test:ci
+            echo "✅ Tests completed"
 
       # Build frontend
       - run:
@@ -62,7 +67,9 @@ jobs:
             echo "🏗 Building frontend..."
             echo "=========================================="
             cd web-app
-            ng build --configuration=production
+            echo "Building with Angular CLI..."
+            npm run build
+            echo "✅ Build completed"
             echo "Build output:"
             ls -lh dist/
             du -sh dist/
