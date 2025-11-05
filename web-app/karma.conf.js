@@ -20,7 +20,7 @@ module.exports = function (config) {
         { type: 'text-summary' }
       ]
     },
-    reporters: ['progress', 'kjhtml'],
+    reporters: ['progress', 'kjhtml', 'coverage'],
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
@@ -29,14 +29,16 @@ module.exports = function (config) {
     singleRun: false,
     restartOnFileChange: true,
 
-    // ---------- CI Custom Launcher ----------
+    // Custom launcher for CI environment
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: [
-          '--no-sandbox',
-          '--disable-gpu',
-          '--disable-dev-shm-usage'
+          '--no-sandbox',              // Required for Docker/CI
+          '--disable-gpu',             // Disable GPU hardware acceleration
+          '--disable-dev-shm-usage',   // Overcome limited resource problems
+          '--disable-software-rasterizer',
+          '--disable-extensions'
         ]
       }
     }

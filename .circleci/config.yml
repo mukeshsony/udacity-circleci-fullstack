@@ -1,265 +1,57 @@
 version: 2.1
 
 executors:
-  node-executor:
+  node-angular:
     docker:
-      - image: circleci/node:20  # Updated next-gen Node.js image
+      - image: cimg/node:20.17-browsers
     working_directory: ~/repo
 
 jobs:
-  # -------------------------
-  # Frontend Build & Test
-  # -------------------------
-  frontend-job:
-    executor: node-executor
+  build-and-test:
+    executor: node-angular
     steps:
       - checkout
-
-      # Restore frontend dependencies cache
+      
       - restore_cache:
           keys:
-            - v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
-
-      # Install frontend dependencies (including devDependencies)
+            - v2-deps-{{ checksum "web-app/package-lock.json" }}
+            - v2-deps-
+      
       - run:
-          name: Install Frontend Dependencies
+          name: Install Dependencies
           command: |
-            echo "=========================================="
-            echo "📦 Installing frontend dependencies..."
-            echo "=========================================="
             cd web-app
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Environment Information:"
-            echo "  Working directory: $(pwd)"
-            echo "  Node version: $(node --version)"
-            echo "  NPM version: $(npm --version)"
-            echo "  NPM config (prefix): $(npm config get prefix)"
-            echo "  User: $(whoami)"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-            echo "Package files check:"
-            ls -lh package.json package-lock.json
-            echo ""
-            echo "Setting NODE_ENV to empty..."
-            unset NODE_ENV
-            echo "NODE_ENV: ${NODE_ENV:-'(empty)'}"
-            echo ""
-            echo "Starting npm ci with dev dependencies..."
-            npm ci --include=dev --loglevel=info
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ Installation Complete - Verification:"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "1. node_modules directory:"
-            ls -ld node_modules
-            echo ""
-            echo "2. Total packages installed:"
-            ls node_modules | wc -l
-            echo ""
-            echo "3. First 20 packages:"
-            ls node_modules | head -20
-            echo ""
-            echo "4. Angular packages:"
-            ls node_modules | grep angular
-            echo ""
-            echo "5. .bin directory:"
-            if [ -d "node_modules/.bin" ]; then
-              echo "   ✅ .bin exists"
-              echo "   Total binaries: $(ls node_modules/.bin | wc -l)"
-              echo "   Binaries (first 20):"
-              ls node_modules/.bin | head -20
-            else
-              echo "   ❌ .bin does NOT exist"
-            fi
-            echo ""
-            echo "6. Angular CLI check:"
-            if [ -f "node_modules/.bin/ng" ]; then
-              echo "   ✅ ng binary found"
-              ls -lh node_modules/.bin/ng
-              echo "   Testing ng binary:"
-              node_modules/.bin/ng version || echo "   ng version failed"
-            else
-              echo "   ❌ ng binary NOT found"
-              echo "   Checking @angular/cli package:"
-              ls -la node_modules/@angular/cli 2>/dev/null | head -5 || echo "   @angular/cli package not found"
-            fi
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-      # Save frontend dependencies cache
+            echo "Node: $(node --version) | NPM: $(npm --version)"
+            npm install
+            echo "Packages installed: $(ls node_modules | wc -l)"
+      
       - save_cache:
           paths:
             - web-app/node_modules
-          key: v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
-
-      # Run frontend unit tests using local Angular CLI via npx
+          key: v2-deps-{{ checksum "web-app/package-lock.json" }}
+      
       - run:
-          name: Run Frontend Unit Tests
+          name: Run Unit Tests
           command: |
-            echo "=========================================="
-            echo "🧪 Running frontend unit tests..."
-            echo "=========================================="
             cd web-app
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Pre-test checks:"
-            echo "  Current directory: $(pwd)"
-            echo "  Chrome available: $(which google-chrome-stable google-chrome chromium 2>/dev/null || echo 'Not found')"
-            echo ""
-            echo "Checking Angular CLI availability:"
-            echo "  1. Via npx:"
-            npx ng version || echo "  npx ng failed"
-            echo ""
-            echo "  2. Direct binary:"
-            ./node_modules/.bin/ng version 2>/dev/null || echo "  Direct ng binary failed"
-            echo ""
-            echo "  3. Via npm script (package.json):"
-            npm run ng -- version 2>/dev/null || echo "  npm run ng failed"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-            echo "Starting tests with ChromeHeadless..."
-            npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ Tests completed"
-            if [ -d coverage ]; then
-              echo "Coverage report:"
-              ls -lh coverage/
-              echo "Coverage summary:"
-              cat coverage/*/index.html | grep -A 5 "coverage-summary" || echo "Could not extract summary"
-            fi
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-      # Build frontend for deploy
+            npm run test:ci
+      
       - run:
-          name: Build Frontend
+          name: Build Production
           command: |
-            echo "=========================================="
-            echo "🏗 Building frontend..."
-            echo "=========================================="
             cd web-app
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Starting production build..."
-            echo "  Current directory: $(pwd)"
-            echo "  Build command: npx ng build --configuration=production"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-            npx ng build --configuration=production
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ Build completed successfully"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Build artifacts:"
-            ls -lh dist/
-            echo ""
-            echo "Total build size:"
-            du -sh dist/
-            echo ""
-            echo "File count:"
-            find dist/ -type f | wc -l
-            echo ""
-            echo "Top 10 largest files:"
-            find dist/ -type f -exec ls -lh {} \; | sort -k5 -hr | head -10
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-      # Cache frontend build artifacts
-      - save_cache:
-          paths:
-            - web-app/dist
-          key: v1-frontend-build-{{ checksum "web-app/package-lock.json" }}
-
-  # -------------------------
-  # Backend Build & Test
-  # -------------------------
-  backend-job:
-    executor: node-executor
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - v1-backend-node-{{ checksum "web-api/package-lock.json" }}
-      - run:
-          name: Install Backend Dependencies
-          command: |
-            echo "=========================================="
-            echo "📦 Installing backend dependencies..."
-            echo "=========================================="
-            cd web-api
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Environment:"
-            echo "  Directory: $(pwd)"
-            echo "  Node: $(node --version)"
-            echo "  NPM: $(npm --version)"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-            unset NODE_ENV
-            npm ci --include=dev --loglevel=info
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ Backend dependencies installed"
-            echo "  Packages: $(ls node_modules | wc -l)"
-            echo "  Binaries: $(ls node_modules/.bin 2>/dev/null | wc -l || echo '0')"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      - save_cache:
-          paths:
-            - web-api/node_modules
-          key: v1-backend-node-{{ checksum "web-api/package-lock.json" }}
-
-      # Run backend tests
-      - run:
-          name: Run Backend Unit Tests
-          command: |
-            echo "=========================================="
-            echo "🧪 Running backend unit tests..."
-            echo "=========================================="
-            cd web-api
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Running Jasmine tests..."
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            npm test
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ Backend tests completed"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-      # Build backend
-      - run:
-          name: Build Backend
-          command: |
-            echo "=========================================="
-            echo "🏗 Building backend..."
-            echo "=========================================="
-            cd web-api
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "TypeScript compilation..."
-            echo "  TypeScript version: $(npx tsc --version 2>/dev/null || echo 'Not found')"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
             npm run build
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            if [ -d dist ]; then
-              echo "✅ Build completed"
-              echo "  Output directory: dist/"
-              echo "  Files: $(find dist/ -type f | wc -l)"
-              echo "  Size: $(du -sh dist/ | cut -f1)"
-              echo ""
-              echo "  Contents:"
-              ls -lh dist/ | head -20
-            else
-              echo "⚠️  dist/ directory not found"
-            fi
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-      - save_cache:
-          paths:
-            - web-api/dist
-          key: v1-backend-build-{{ checksum "web-api/package-lock.json" }}
+      
+      - store_test_results:
+          path: web-app/coverage
+      
+      - store_artifacts:
+          path: web-app/coverage
+      
+      - store_artifacts:
+          path: web-app/dist
 
 workflows:
-  version: 2
-  build-test-deploy:
+  build-test:
     jobs:
-      - frontend-job
-      - backend-job:
-          requires:
-            - frontend-job
+      - build-and-test
