@@ -17,22 +17,24 @@ jobs:
 
       - restore_cache:
           keys:
-            - v3-frontend-node-{{ checksum "web-app/package-lock.json" }}
-            - v3-frontend-node-
+            - v4-frontend-node-{{ checksum "web-app/package-lock.json" }}
+            - v4-frontend-node-
 
       - run:
           name: 📦 Install Frontend Dependencies
           command: |
-            echo "📂 Listing root directory contents:"
-            ls -la
             echo "=========================================="
             echo "📦 Installing frontend dependencies..."
             echo "=========================================="
             cd web-app
             echo "Node version: $(node -v)"
             echo "NPM version: $(npm -v)"
+            echo "Checking package-lock.json: $([ -f "package-lock.json" ] && echo "EXISTS ($(wc -l < package-lock.json) lines)" || echo "MISSING")"
+            echo "Clearing any corrupted cache..."
+            rm -rf node_modules package-lock.json
+            echo "Regenerating package-lock.json and installing..."
             npm install
-            echo "✅ npm install completed with exit code: $?"
+            echo "✅ npm install exit code: $?"
             echo "=========================================="
             echo "� Checking installation results:"
             echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
@@ -51,7 +53,8 @@ jobs:
       - save_cache:
           paths:
             - web-app/node_modules
-          key: v3-frontend-node-{{ checksum "web-app/package-lock.json" }}
+            - web-app/package-lock.json
+          key: v4-frontend-node-{{ checksum "web-app/package-lock.json" }}
 
       - run:
           name: 🧪 Run Frontend Unit Tests
@@ -73,7 +76,7 @@ jobs:
             echo "✅ Frontend build complete."
 
       - save_cache:
-          key: v3-frontend-dist-{{ checksum "web-app/package-lock.json" }}
+          key: v4-frontend-dist-{{ checksum "web-app/package-lock.json" }}
           paths:
             - web-app/dist
 
