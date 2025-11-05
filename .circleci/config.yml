@@ -31,7 +31,7 @@ jobs:
             cd web-app
             echo "Node version: $(node -v)"
             echo "NPM version: $(npm -v)"
-            npm ci
+            npm install
             echo "✅ Dependencies installed."
             echo "📂 Checking node_modules/.bin:"
             ls -la node_modules/.bin | head -20
@@ -97,7 +97,7 @@ jobs:
             echo "📦 Installing backend dependencies..."
             echo "=========================================="
             cd web-api
-            npm ci
+            npm install
             echo "✅ Dependencies installed."
 
       - save_cache:
