@@ -1,71 +1,155 @@
 version: 2.1
 
 executors:
-  node-angular:
+  node-executor:
     docker:
       - image: cimg/node:20.17-browsers
     working_directory: ~/repo
 
 jobs:
-  build-and-test:
-    executor: node-angular
+  # ------------------------------------------------
+  # 🧱 FRONTEND JOB
+  # ------------------------------------------------
+  frontend-job:
+    executor: node-executor
     steps:
       - checkout
-      
-      # Cache node_modules for faster builds
+
       - restore_cache:
           keys:
-            - v2-deps-{{ checksum "web-app/package-lock.json" }}
-            - v2-deps-
+            - v3-frontend-node-{{ checksum "web-app/package-lock.json" }}
+            - v3-frontend-node-
 
       - run:
-          name: 📦 Install Dependencies
+          name: 📦 Install Frontend Dependencies
           command: |
-            cd web-app
             echo "=========================================="
-            echo "Installing dependencies..."
-            echo "Node: $(node -v) | NPM: $(npm -v)"
-            npm ci --include=dev
-            echo "✅ Dependencies installed"
-            echo "Checking for Angular CLI binary:"
-            ls -l node_modules/.bin/ng || echo "⚠️ ng binary not found!"
-            npx ng version
+            echo "📦 Installing frontend dependencies..."
+            echo "=========================================="
+            cd web-app
+            echo "Node version: $(node -v)"
+            echo "NPM version: $(npm -v)"
+            npm ci
+            echo "✅ Dependencies installed."
 
       - save_cache:
           paths:
             - web-app/node_modules
-          key: v2-deps-{{ checksum "web-app/package-lock.json" }}
+          key: v3-frontend-node-{{ checksum "web-app/package-lock.json" }}
 
       - run:
-          name: 🧪 Run Angular Unit Tests
+          name: 🧪 Run Frontend Unit Tests
           command: |
-            cd web-app
             echo "=========================================="
-            echo "Running unit tests with ChromeHeadlessCI..."
+            echo "🧪 Running frontend unit tests..."
+            echo "=========================================="
+            cd web-app
             npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
-            echo "✅ Tests finished successfully"
-            ls -lh coverage/ || echo "⚠️ No coverage folder found"
 
       - run:
-          name: 🏗 Build Angular Production App
+          name: 🏗️ Build Frontend
           command: |
-            cd web-app
             echo "=========================================="
-            echo "Building production app..."
-            npx ng build --configuration production
-            echo "✅ Build completed successfully"
-            ls -lh dist/ || echo "⚠️ dist folder missing"
+            echo "🏗️ Building frontend..."
+            echo "=========================================="
+            cd web-app
+            npm run build -- --configuration production
+            echo "✅ Frontend build complete."
 
-      - store_test_results:
-          path: web-app/coverage
+      - save_cache:
+          key: v3-frontend-dist-{{ checksum "web-app/package-lock.json" }}
+          paths:
+            - web-app/dist
 
-      - store_artifacts:
-          path: web-app/coverage
+      - run:
+          name: 🚀 Skip deploy if frontend build cache unchanged
+          command: |
+            echo "Checking if frontend build changed..."
+            if [ -d "web-app/dist" ]; then
+              echo "✅ Build exists, skipping deploy."
+              circleci step halt
+            fi
 
       - store_artifacts:
           path: web-app/dist
+          destination: frontend-dist
+      - store_artifacts:
+          path: web-app/coverage
+          destination: frontend-coverage
 
+  # ------------------------------------------------
+  # ⚙️ BACKEND JOB
+  # ------------------------------------------------
+  backend-job:
+    executor: node-executor
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v3-backend-node-{{ checksum "web-api/package-lock.json" }}
+            - v3-backend-node-
+
+      - run:
+          name: 📦 Install Backend Dependencies
+          command: |
+            echo "=========================================="
+            echo "📦 Installing backend dependencies..."
+            echo "=========================================="
+            cd web-api
+            npm ci
+            echo "✅ Dependencies installed."
+
+      - save_cache:
+          paths:
+            - web-api/node_modules
+          key: v3-backend-node-{{ checksum "web-api/package-lock.json" }}
+
+      - run:
+          name: 🧪 Run Backend Unit Tests
+          command: |
+            echo "=========================================="
+            echo "🧪 Running backend unit tests..."
+            echo "=========================================="
+            cd web-api
+            npm test
+
+      - run:
+          name: 🏗️ Build Backend
+          command: |
+            echo "=========================================="
+            echo "🏗️ Building backend..."
+            echo "=========================================="
+            cd web-api
+            npm run build
+            echo "✅ Backend build complete."
+
+      - save_cache:
+          key: v3-backend-dist-{{ checksum "web-api/package-lock.json" }}
+          paths:
+            - web-api/dist
+
+      - run:
+          name: 🚀 Skip deploy if backend build cache unchanged
+          command: |
+            echo "Checking if backend build changed..."
+            if [ -d "web-api/dist" ]; then
+              echo "✅ Build exists, skipping deploy."
+              circleci step halt
+            fi
+
+      - store_artifacts:
+          path: web-api/dist
+          destination: backend-dist
+
+# ------------------------------------------------
+# 🔄 WORKFLOW: sequential build/test/deploy
+# ------------------------------------------------
 workflows:
-  build-test:
+  version: 2
+  build-test-deploy:
     jobs:
-      - build-and-test
+      - frontend-job
+      - backend-job:
+          requires:
+            - frontend-job

@@ -1,8 +1,4 @@
-const puppeteer = require('puppeteer');
-
-// Use Puppeteer's Chromium in CI
-process.env.CHROME_BIN = puppeteer.executablePath();
-
+// karma.conf.js
 module.exports = function (config) {
   config.set({
     basePath: '',
@@ -15,7 +11,7 @@ module.exports = function (config) {
       require('@angular-devkit/build-angular/plugins/karma')
     ],
     client: {
-      clearContext: false
+      clearContext: false // leave Jasmine Spec Runner output visible in browser
     },
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage'),
@@ -29,10 +25,11 @@ module.exports = function (config) {
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
-    autoWatch: false,
-    browsers: ['ChromeHeadlessCI'],
-    singleRun: true,
-    restartOnFileChange: false,
+    autoWatch: true,
+    singleRun: false,
+    restartOnFileChange: true,
+
+    // Define custom launcher for CI
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
@@ -41,9 +38,16 @@ module.exports = function (config) {
           '--disable-gpu',
           '--disable-dev-shm-usage',
           '--disable-software-rasterizer',
-          '--disable-extensions'
+          '--disable-extensions',
+          '--remote-debugging-port=9222'
         ]
       }
-    }
+    },
+
+    // 👇 Use ChromeHeadlessCI by default in CI mode
+    browsers: process.env.CI ? ['ChromeHeadlessCI'] : ['Chrome'],
+
+    // Ensure Angular CLI test runner integrates correctly
+    browserNoActivityTimeout: 60000
   });
 };
