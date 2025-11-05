@@ -31,12 +31,24 @@ jobs:
             echo "Current directory: $(pwd)"
             echo "Node version: $(node --version)"
             echo "NPM version: $(npm --version)"
-            npm ci
+            echo "Listing files before install:"
+            ls -la | head -20
+            echo ""
+            echo "Installing dependencies with npm ci..."
+            npm ci --verbose
+            echo ""
             echo "✅ Dependencies installed successfully"
-            echo "Verifying Angular CLI installation..."
-            ls -la node_modules/.bin/ | grep ng
-            echo "Checking if Angular CLI works..."
-            ./node_modules/.bin/ng version || echo "Issue with ng binary"
+            echo "Verifying node_modules directory exists:"
+            ls -ld node_modules
+            echo ""
+            echo "Checking node_modules/.bin directory:"
+            ls -la node_modules/.bin/ | head -20
+            echo ""
+            echo "Verifying Angular CLI installation:"
+            ls -la node_modules/.bin/ng
+            echo ""
+            echo "Testing Angular CLI:"
+            ./node_modules/.bin/ng version
       - save_cache:
           paths:
             - web-app/node_modules
