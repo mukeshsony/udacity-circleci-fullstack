@@ -29,22 +29,20 @@ jobs:
             cd web-app
             echo "Node version: $(node -v)"
             echo "NPM version: $(npm -v)"
-            echo "Checking package-lock.json: $([ -f "package-lock.json" ] && echo "EXISTS ($(wc -l < package-lock.json) lines)" || echo "MISSING")"
-            if [ ! -f "package-lock.json" ]; then
-              echo "ERROR: package-lock.json not found!"
-              ls -la
-              exit 1
-            fi
-            echo "package-lock.json first 20 lines:"
-            head -20 package-lock.json
-            echo "Searching for @angular/cli in package-lock.json:"
-            grep -c "@angular/cli" package-lock.json || echo "NOT FOUND"
-            echo "Clearing node_modules and package-lock to force regeneration..."
-            rm -rf node_modules package-lock.json
-            echo "Running npm install (not ci) to regenerate lock file..."
-            npm install
+            echo "=========================================="
+            echo "Checking package.json devDependencies:"
+            cat package.json | grep -A 15 '"devDependencies"'
+            echo "=========================================="
+            echo "Current directory contents:"
+            ls -la
+            echo "=========================================="
+            echo "Running npm install with full output..."
+            npm install 2>&1 | tee /tmp/npm-install.log
             NPM_EXIT=$?
+            echo "=========================================="
             echo "✅ npm install exit code: $NPM_EXIT"
+            echo "Last 50 lines of npm install output:"
+            tail -50 /tmp/npm-install.log
             if [ $NPM_EXIT -ne 0 ]; then
               echo "ERROR: npm install failed!"
               exit 1
