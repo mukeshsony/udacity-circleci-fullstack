@@ -52,8 +52,7 @@ jobs:
             ls -la web-app
             echo "=========================================="
             cd web-app
-            ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
-            #npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
+            npm run test:ci
 
       - run:
           name: 🏗️ Build Frontend
