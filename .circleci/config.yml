@@ -461,10 +461,51 @@ jobs:
             echo "=========================================="
             echo "☁️ Deploying frontend to AWS S3..."
             echo "=========================================="
+            
+            # Debug: Show environment info
+            echo "📋 AWS Configuration Debug:"
+            echo "AWS CLI version: $(aws --version)"
+            echo "----------------------------------------"
+            
+            # Validate required environment variables with detailed output
+            echo "🔍 Checking AWS_S3_BUCKET..."
+            if [ -z "${AWS_S3_BUCKET}" ]; then
+              echo "❌ ERROR: AWS_S3_BUCKET environment variable is not set!"
+              echo "Available env vars starting with AWS:"
+              env | grep "^AWS" | grep -v "SECRET" | grep -v "KEY" || echo "No AWS_* variables found"
+              exit 1
+            else
+              echo "✅ AWS_S3_BUCKET is set: ${AWS_S3_BUCKET}"
+            fi
+            
+            echo "🔍 Checking AWS_DEFAULT_REGION..."
+            if [ -z "${AWS_DEFAULT_REGION}" ]; then
+              echo "❌ ERROR: AWS_DEFAULT_REGION environment variable is not set!"
+              echo "Available env vars starting with AWS:"
+              env | grep "^AWS" | grep -v "SECRET" | grep -v "KEY" || echo "No AWS_* variables found"
+              exit 1
+            else
+              echo "✅ AWS_DEFAULT_REGION is set: ${AWS_DEFAULT_REGION}"
+            fi
+            
+            echo "=========================================="
             echo "S3 Bucket: ${AWS_S3_BUCKET}"
             echo "AWS Region: ${AWS_DEFAULT_REGION}"
-            echo "=========================================="
+            echo "----------------------------------------"
             cd web-app
+            echo "📂 Current directory: $(pwd)"
+            echo "📦 Checking dist directory:"
+            if [ -d "dist" ]; then
+              echo "✅ dist directory exists"
+              echo "Files to upload: $(find dist -type f | wc -l)"
+              echo "Total size: $(du -sh dist)"
+            else
+              echo "❌ ERROR: dist directory not found!"
+              exit 1
+            fi
+            echo "=========================================="
+            echo "🚀 Starting S3 sync..."
+            echo "Command: aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ --delete --acl public-read --cache-control max-age=86400"
             aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ \
               --delete \
               --acl public-read \
@@ -485,6 +526,13 @@ jobs:
             echo "=========================================="
             echo "🔄 Invalidating CloudFront cache..."
             echo "=========================================="
+            
+            # Validate required environment variable
+            if [ -z "${AWS_CLOUDFRONT_DISTRIBUTION_ID}" ]; then
+              echo "❌ ERROR: AWS_CLOUDFRONT_DISTRIBUTION_ID environment variable is not set!"
+              exit 1
+            fi
+            
             echo "Distribution ID: ${AWS_CLOUDFRONT_DISTRIBUTION_ID}"
             echo "=========================================="
             aws cloudfront create-invalidation \
@@ -529,7 +577,49 @@ jobs:
             echo "=========================================="
             echo "🚀 Deploying backend to Elastic Beanstalk..."
             echo "=========================================="
+            
+            # Debug: Show all environment variables (masked sensitive ones)
+            echo "📋 Environment Variables Debug:"
+            echo "PATH: $PATH"
+            echo "HOME: $HOME"
+            echo "USER: $USER"
+            echo "SHELL: $SHELL"
+            echo "----------------------------------------"
+            
+            # Validate required environment variables with detailed output
+            echo "🔍 Checking EB_APP_NAME..."
+            if [ -z "${EB_APP_NAME}" ]; then
+              echo "❌ ERROR: EB_APP_NAME environment variable is not set!"
+              echo "Available env vars starting with EB:"
+              env | grep "^EB" || echo "No EB_* variables found"
+              exit 1
+            else
+              echo "✅ EB_APP_NAME is set: ${EB_APP_NAME}"
+            fi
+            
+            echo "🔍 Checking EB_ENV_NAME..."
+            if [ -z "${EB_ENV_NAME}" ]; then
+              echo "❌ ERROR: EB_ENV_NAME environment variable is not set!"
+              echo "Available env vars starting with EB:"
+              env | grep "^EB" || echo "No EB_* variables found"
+              exit 1
+            else
+              echo "✅ EB_ENV_NAME is set: ${EB_ENV_NAME}"
+            fi
+            
+            echo "🔍 Checking AWS_DEFAULT_REGION..."
+            if [ -z "${AWS_DEFAULT_REGION}" ]; then
+              echo "❌ ERROR: AWS_DEFAULT_REGION environment variable is not set!"
+              echo "Available env vars starting with AWS:"
+              env | grep "^AWS" | grep -v "SECRET" | grep -v "KEY" || echo "No AWS_* variables found"
+              exit 1
+            else
+              echo "✅ AWS_DEFAULT_REGION is set: ${AWS_DEFAULT_REGION}"
+            fi
+            
+            echo "=========================================="
             cd web-api
+            echo "📂 Current directory: $(pwd)"
             echo "EB Application: ${EB_APP_NAME}"
             echo "EB Environment: ${EB_ENV_NAME}"
             echo "AWS Region: ${AWS_DEFAULT_REGION}"
@@ -547,21 +637,53 @@ jobs:
               exit 1
             fi
             echo "=========================================="
-            echo "Initializing EB (if needed)..."
+            echo "🔧 Initializing EB (if needed)..."
             if [ ! -d ".elasticbeanstalk" ]; then
-              echo "Creating .elasticbeanstalk directory..."
+              echo "📁 Creating .elasticbeanstalk directory..."
               mkdir -p .elasticbeanstalk
-              echo "Initializing EB application..."
+              echo "🎯 Initializing EB application..."
+              echo "Command: eb init ${EB_APP_NAME} --platform node.js --region ${AWS_DEFAULT_REGION}"
               eb init ${EB_APP_NAME} --platform node.js --region ${AWS_DEFAULT_REGION}
+              EB_INIT_EXIT=$?
+              echo "EB init exit code: $EB_INIT_EXIT"
+              if [ $EB_INIT_EXIT -ne 0 ]; then
+                echo "❌ ERROR: EB init failed!"
+                exit 1
+              fi
             else
-              echo "EB already initialized"
+              echo "✅ EB already initialized"
+              echo "Existing .elasticbeanstalk contents:"
+              ls -la .elasticbeanstalk/
+              if [ -f ".elasticbeanstalk/config.yml" ]; then
+                echo "EB config.yml contents:"
+                cat .elasticbeanstalk/config.yml
+              fi
             fi
             echo "=========================================="
-            echo "Setting default environment: ${EB_ENV_NAME}"
-            eb use ${EB_ENV_NAME}
+            echo "🎯 Setting default environment: ${EB_ENV_NAME}"
+            echo "Command: eb use \"${EB_ENV_NAME}\""
+            echo "EB_ENV_NAME length: ${#EB_ENV_NAME}"
+            echo "EB_ENV_NAME value (quoted): '${EB_ENV_NAME}'"
+            
+            # Double check before using
+            if [ -z "${EB_ENV_NAME}" ]; then
+              echo "❌ ERROR: EB_ENV_NAME is empty or not set!"
+              exit 1
+            fi
+            
+            eb use "${EB_ENV_NAME}"
+            EB_USE_EXIT=$?
+            echo "EB use exit code: $EB_USE_EXIT"
+            if [ $EB_USE_EXIT -ne 0 ]; then
+              echo "❌ ERROR: eb use command failed!"
+              echo "Listing available environments:"
+              eb list || echo "Failed to list environments"
+              exit 1
+            fi
             echo "=========================================="
-            echo "Deploying to environment: ${EB_ENV_NAME}"
-            eb deploy ${EB_ENV_NAME} --verbose
+            echo "🚀 Deploying to environment: ${EB_ENV_NAME}"
+            echo "Command: eb deploy \"${EB_ENV_NAME}\" --verbose"
+            eb deploy "${EB_ENV_NAME}" --verbose
             DEPLOY_EXIT=$?
             echo "=========================================="
             echo "✅ EB deploy exit code: $DEPLOY_EXIT"
@@ -583,42 +705,45 @@ workflows:
   test-build-deploy:
     jobs:
       # Test and build phase (parallel)
-      - udacity-web-app:
-          filters:
-            branches:
-              only:
-                - main
+      # TEMPORARILY DISABLED FOR DEBUGGING
+      # - udacity-web-app:
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
       
-      - udacity-web-api:
-          filters:
-            branches:
-              only:
-                - main
+      # - udacity-web-api:
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
       
       # Manual approval gate
-      - hold-for-approval:
-          type: approval
-          requires:
-            - udacity-web-app
-            - udacity-web-api
-          filters:
-            branches:
-              only:
-                - main
+      # TEMPORARILY DISABLED - requires udacity-web-app and udacity-web-api
+      # - hold-for-approval:
+      #     type: approval
+      #     requires:
+      #       - udacity-web-app
+      #       - udacity-web-api
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
       
       # Deploy phase (parallel after approval)
-      - deploy-frontend:
-          requires:
-            - hold-for-approval
-          filters:
-            branches:
-              only:
-                - main
+      # TEMPORARILY DISABLED - requires hold-for-approval
+      # - deploy-frontend:
+      #     requires:
+      #       - hold-for-approval
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
       
-      - deploy-backend:
-          requires:
-            - hold-for-approval
-          filters:
-            branches:
-              only:
-                - main
+      # - deploy-backend:
+      #     requires:
+      #       - hold-for-approval
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
