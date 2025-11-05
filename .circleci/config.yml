@@ -21,23 +21,32 @@ jobs:
             - v3-frontend-node-
 
       - run:
-          name: 📦 Clean Install Frontend Dependencies
+          name: 📦 Install Frontend Dependencies
           command: |
             echo "📂 Listing root directory contents:"
             ls -la
             echo "=========================================="
-            echo "📦 Cleaning node_modules and installing frontend dependencies..."
+            echo "📦 Installing frontend dependencies..."
+            echo "=========================================="
             cd web-app
-            rm -rf node_modules
+            echo "Node version: $(node -v)"
+            echo "NPM version: $(npm -v)"
             npm install
-            echo "✅ Dependencies installed."
-            echo "📂 Checking node_modules/.bin:"
-            ls -la node_modules/.bin | head -20
-            echo "🔍 Checking if @angular/cli is installed:"
-            npm list @angular/cli
-            echo "🔍 Verifying Angular CLI executable:"
-            which ng || echo "ng not found"
-            npx ng version
+            echo "✅ npm install completed with exit code: $?"
+            echo "=========================================="
+            echo "� Checking installation results:"
+            echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
+            if [ -d "node_modules/.bin" ]; then
+              echo "✅ node_modules/.bin exists"
+              echo "Executables in .bin: $(ls node_modules/.bin 2>/dev/null | wc -l)"
+              ls -la node_modules/.bin | head -20
+            else
+              echo "❌ node_modules/.bin directory NOT FOUND!"
+              echo "Checking if node_modules exists: $([ -d "node_modules" ] && echo "YES" || echo "NO")"
+            fi
+            echo "=========================================="
+            echo "🔍 Checking @angular/cli installation:"
+            npm list @angular/cli || echo "⚠️ @angular/cli not found"
 
       - save_cache:
           paths:
