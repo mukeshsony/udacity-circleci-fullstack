@@ -58,6 +58,8 @@ jobs:
           name: Run Unit Tests
           command: |
             cd testing
+            export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")
+            echo "Chrome binary path: $CHROME_BIN"
             npm run test:ci
       
       # Build application
