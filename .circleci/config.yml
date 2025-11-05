@@ -34,8 +34,8 @@ jobs:
             echo "Checking package files:"
             ls -lh package.json package-lock.json
             echo ""
-            echo "Running npm ci..."
-            npm ci --loglevel=info
+            echo "Running npm install..."
+            npm install --loglevel=info
             echo "✅ Dependencies installed"
             echo ""
             echo "node_modules directory:"
@@ -117,7 +117,8 @@ jobs:
             echo "Checking package files:"
             ls -lh package.json package-lock.json
             echo ""
-            npm ci --loglevel=info
+            echo "Running npm install..."
+            npm install --loglevel=info
             echo "✅ Dependencies installed"
             echo ""
             echo "node_modules directory:"
