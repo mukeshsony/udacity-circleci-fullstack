@@ -1,0 +1,46 @@
+<div class="product-detail-container" *ngIf="product">
+  <button class="back-button" (click)="goBack()">← Back to Products</button>
+  
+  <div class="product-detail">
+    <div class="product-image-section">
+      <img [src]="product.url" [alt]="product.name" class="detail-image">
+    </div>
+    
+    <div class="product-info-section">
+      <h1>{{ product.name }}</h1>
+      <p class="product-category" *ngIf="product.category">{{ product.category }}</p>
+      <p class="product-price">${{ product.price.toFixed(2) }}</p>
+      <p class="product-description">{{ product.description }}</p>
+      
+      <div class="add-to-cart-section">
+        <label for="quantity">Quantity:</label>
+        <input 
+          type="number" 
+          id="quantity" 
+          name="quantity"
+          [(ngModel)]="quantity"
+          (ngModelChange)="onQuantityChange($event)"
+          min="1" 
+          max="99"
+          class="quantity-input"
+          [class.invalid]="quantityError">
+        
+        <!-- Error message displayed using ngIf, validated by ngModelChange -->
+        <div class="quantity-error" *ngIf="quantityError">
+          {{ quantityError }}
+        </div>
+        
+        <button 
+          class="add-to-cart-button" 
+          (click)="addToCart()"
+          [disabled]="quantity < 1 || quantityError">
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading" *ngIf="!product">
+  <p>Loading product details...</p>
+</div>

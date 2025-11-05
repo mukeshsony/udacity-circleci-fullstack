@@ -1,0 +1,35 @@
+{
+  "name": "fullstack-deployment-project",
+  "version": "1.0.0",
+  "description": "Full-stack application with Angular frontend and Node.js backend",
+  "private": true,
+  "scripts": {
+    "frontend:install": "cd web-app && npm install",
+    "backend:install": "cd web-api && npm install",
+    "install:all": "npm run frontend:install && npm run backend:install",
+    "frontend:build": "cd web-app && npm run build",
+    "backend:build": "cd web-api && npm run build",
+    "build:all": "npm run frontend:build && npm run backend:build",
+    "frontend:test": "cd web-app && npm run test",
+    "backend:test": "cd web-api && npm run test",
+    "test:all": "npm run frontend:test && npm run backend:test",
+    "frontend:start": "cd web-app && npm start",
+    "backend:start": "cd web-api && npm start",
+    "deploy:frontend": "cd web-app && npm run deploy",
+    "deploy:backend": "cd web-api && npm run deploy",
+    "deploy:all": "npm run deploy:frontend && npm run deploy:backend"
+  },
+  "keywords": [
+    "angular",
+    "nodejs",
+    "fullstack",
+    "aws",
+    "circleci"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

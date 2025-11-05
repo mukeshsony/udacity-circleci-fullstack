@@ -1,0 +1,16 @@
+<header class="header">
+  <div class="header-container">
+    <a routerLink="/" class="logo">
+      <h1>MyStore</h1>
+    </a>
+    
+    <nav class="nav">
+      <a routerLink="/" class="nav-link">Products</a>
+      <a routerLink="/cart" class="nav-link cart-link">
+        <span class="cart-icon">🛒</span>
+        Cart
+        <span class="cart-badge" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+      </a>
+    </nav>
+  </div>
+</header>

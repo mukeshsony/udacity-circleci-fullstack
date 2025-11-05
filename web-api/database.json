@@ -1,0 +1,26 @@
+{
+  "dev": {
+    "driver": "pg",
+    "host": "localhost",
+    "port": 5432,
+    "database": "storefront_dev",
+    "user": "postgres",
+    "password": "password"
+  },
+  "test": {
+    "driver": "pg",
+    "host": "localhost",
+    "port": 5432,
+    "database": "storefront_test",
+    "user": "postgres",
+    "password": "password"
+  },
+  "production": {
+    "driver": "pg",
+    "host": {"ENV": "DATABASE_HOST"},
+    "port": {"ENV": "DATABASE_PORT"},
+    "database": {"ENV": "DATABASE_NAME"},
+    "user": {"ENV": "DATABASE_USER"},
+    "password": {"ENV": "DATABASE_PASSWORD"}
+  }
+}

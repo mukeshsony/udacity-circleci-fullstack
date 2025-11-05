@@ -1,0 +1,211 @@
+version: 2.1
+
+executors:
+  node-executor:
+    docker:
+      - image: circleci/node:20
+    working_directory: ~/repo
+
+orbs:
+  aws-cli: circleci/aws-cli@4.0.0
+  eb: circleci/aws-elastic-beanstalk@2.0.1
+
+jobs:
+  # -------------------------
+  # Frontend Build & Test
+  # -------------------------
+  frontend-job:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
+      - run:
+          name: Install Angular CLI
+          command: |
+            echo "Installing Angular CLI..."
+            npm install -g @angular/cli
+      - run:
+          name: Install Frontend Dependencies
+          command: |
+            echo "Installing frontend dependencies..."
+            cd web-app && npm install
+      - save_cache:
+          paths:
+            - web-app/node_modules
+          key: v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
+      - run:
+          name: Run Frontend Unit Tests
+          command: |
+            echo "Running frontend unit tests..."
+            cd web-app && npm test -- --watch=false --browsers=ChromeHeadless
+      - run:
+          name: Build Frontend
+          command: |
+            echo "Building frontend..."
+            cd web-app && ng build --prod
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - web-app/dist
+            - web-app/node_modules
+            - web-app/package.json
+      - save_cache:
+          paths:
+            - web-app/dist
+          key: v1-frontend-build-{{ checksum "web-app/dist" }}
+
+  # -------------------------
+  # Backend Build & Test
+  # -------------------------
+  backend-job:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-backend-node-{{ checksum "web-api/package-lock.json" }}
+      - run:
+          name: Install Backend Dependencies
+          command: |
+            echo "Installing backend dependencies..."
+            cd web-api && npm install
+      - save_cache:
+          paths:
+            - web-api/node_modules
+          key: v1-backend-node-{{ checksum "web-api/package-lock.json" }}
+      - run:
+          name: Run Backend Unit Tests
+          command: |
+            echo "Running backend unit tests..."
+            cd web-api && npm test
+      - run:
+          name: Build Backend
+          command: |
+            echo "Building backend..."
+            cd web-api && npm run build
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - web-api/dist
+            - web-api/node_modules
+            - web-api/package.json
+      - save_cache:
+          paths:
+            - web-api/dist
+          key: v1-backend-build-{{ checksum "web-api/dist" }}
+
+  # -------------------------
+  # Deploy Frontend
+  # -------------------------
+  deploy-frontend:
+    executor: node-executor
+    steps:
+      - checkout
+      - aws-cli/setup
+      - attach_workspace:
+          at: ~/repo
+      - restore_cache:
+          keys:
+            - v1-frontend-build-{{ checksum "web-app/dist" }}
+      - run:
+          name: Check if Frontend Needs Deploy
+          command: |
+            if [ -d "web-app/dist" ] && [ "$(ls -A web-app/dist)" ]; then
+              echo "Frontend build exists. Deploying..."
+              cd web-app/dist
+              aws s3 sync . s3://${AWS_S3_BUCKET} --delete
+              echo "Invalidating CloudFront cache..."
+              aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+            else
+              echo "No frontend changes detected. Skipping deploy."
+            fi
+
+  # -------------------------
+  # Deploy Backend
+  # -------------------------
+  deploy-backend:
+    executor: node-executor
+    steps:
+      - checkout
+      - aws-cli/setup
+      - eb/setup
+      - attach_workspace:
+          at: ~/repo
+      - restore_cache:
+          keys:
+            - v1-backend-build-{{ checksum "web-api/dist" }}
+      - run:
+          name: Check if Backend Needs Deploy
+          command: |
+            if [ -d "web-api/dist" ] && [ "$(ls -A web-api/dist)" ]; then
+              echo "Backend build exists. Preparing deployment package..."
+              cd web-api
+              zip -r deploy.zip dist node_modules package.json .ebextensions
+              echo "Deploying backend to Elastic Beanstalk..."
+              eb deploy ${EB_ENVIRONMENT_NAME}
+            else
+              echo "No backend changes detected. Skipping deploy."
+            fi
+
+# -------------------------
+# Workflows
+# -------------------------
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      # Parallel build & test
+      - frontend-job:
+          filters:
+            branches:
+              only:
+                - main
+                - develop
+      - backend-job:
+          filters:
+            branches:
+              only:
+                - main
+                - develop
+
+      # Manual approval for production
+      - hold-for-approval:
+          type: approval
+          requires:
+            - frontend-job
+            - backend-job
+          filters:
+            branches:
+              only: main
+
+      # Sequential deploys for production
+      - deploy-frontend:
+          requires:
+            - hold-for-approval
+          filters:
+            branches:
+              only: main
+      - deploy-backend:
+          requires:
+            - deploy-frontend
+          filters:
+            branches:
+              only: main
+
+      # Sequential deploys for staging (develop branch)
+      - deploy-frontend:
+          name: deploy-frontend-staging
+          requires:
+            - frontend-job
+          filters:
+            branches:
+              only: develop
+      - deploy-backend:
+          name: deploy-backend-staging
+          requires:
+            - deploy-frontend-staging
+          filters:
+            branches:
+              only: develop
