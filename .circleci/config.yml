@@ -43,7 +43,10 @@ jobs:
             echo "=========================================="
             echo "🧪 Running frontend unit tests..."
             echo "=========================================="
-            cd web-app
+            echo "📂 Listing checkout directory contents:"
+            ls -la
+            echo "=========================================="
+            # cd web-app
             npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
 
       - run:
