@@ -83,7 +83,7 @@ jobs:
           path: testing/dist
           destination: dist
 
-  test-web-app:
+  udacity-web-app:
     executor: node-browsers
     steps:
       - checkout
@@ -151,6 +151,61 @@ jobs:
           path: web-app/dist
           destination: dist
 
+  udacity-web-api:
+    executor: node-browsers
+    steps:
+      - checkout
+      
+      # Restore cached dependencies
+      - restore_cache:
+          name: Restore npm dependencies cache
+          keys:
+            - v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}
+            - v1-web-api-deps-
+      
+      # Install dependencies
+      - run:
+          name: Install Dependencies
+          command: |
+            cd web-api
+            echo "Node: $(node --version)"
+            echo "NPM: $(npm --version)"
+            npm ci
+      
+      # Save dependencies to cache
+      - save_cache:
+          name: Save npm dependencies cache
+          key: v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}
+          paths:
+            - web-api/node_modules
+      
+      # Verify installation
+      - run:
+          name: Verify Installation
+          command: |
+            cd web-api
+            echo "Checking installed packages..."
+            npm list --depth=0
+      
+      # Run unit tests
+      - run:
+          name: Run Unit Tests
+          command: |
+            cd web-api
+            npm test
+      
+      # Build application
+      - run:
+          name: Build Application
+          command: |
+            cd web-api
+            npm run build
+      
+      # Store build artifacts
+      - store_artifacts:
+          path: web-api/dist
+          destination: dist
+
 # ================================================
 # WORKFLOWS - Orchestrate job execution
 # ================================================
@@ -159,4 +214,5 @@ workflows:
   test-and-build:
     jobs:
       - test-angular-app
-      - test-web-app
+      - udacity-web-app
+      - udacity-web-api
