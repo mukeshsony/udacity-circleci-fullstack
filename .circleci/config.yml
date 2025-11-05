@@ -15,11 +15,10 @@ jobs:
     steps:
       - checkout
 
-      # Temporarily disabled cache to diagnose issue
-      # - restore_cache:
-      #     keys:
-      #       - v4-frontend-node-{{ checksum "web-app/package-lock.json" }}
-      #       - v4-frontend-node-
+      - restore_cache:
+          keys:
+            - v5-frontend-node-{{ checksum "web-app/package.json" }}
+            - v5-frontend-node-
 
       - run:
           name: 📦 Install Frontend Dependencies
@@ -40,16 +39,17 @@ jobs:
             head -20 package-lock.json
             echo "Searching for @angular/cli in package-lock.json:"
             grep -c "@angular/cli" package-lock.json || echo "NOT FOUND"
-            echo "Clearing node_modules to ensure clean install..."
-            rm -rf node_modules
-            echo "Running npm ci with verbose output..."
-            npm ci --loglevel=verbose 2>&1 | tail -100
+            echo "Clearing node_modules and package-lock to force regeneration..."
+            rm -rf node_modules package-lock.json
+            echo "Running npm install (not ci) to regenerate lock file..."
+            npm install
             NPM_EXIT=$?
-            echo "✅ npm ci exit code: $NPM_EXIT"
+            echo "✅ npm install exit code: $NPM_EXIT"
             if [ $NPM_EXIT -ne 0 ]; then
-              echo "ERROR: npm ci failed!"
+              echo "ERROR: npm install failed!"
               exit 1
             fi
+            echo "Regenerated package-lock.json lines: $(wc -l < package-lock.json)"
             echo "=========================================="
             echo "� Checking installation results:"
             echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
@@ -68,7 +68,8 @@ jobs:
       - save_cache:
           paths:
             - web-app/node_modules
-          key: v4-frontend-node-{{ checksum "web-app/package-lock.json" }}
+            - web-app/package-lock.json
+          key: v5-frontend-node-{{ checksum "web-app/package.json" }}
 
       - run:
           name: 🧪 Run Frontend Unit Tests
@@ -90,7 +91,7 @@ jobs:
             echo "✅ Frontend build complete."
 
       - save_cache:
-          key: v4-frontend-dist-{{ checksum "web-app/package-lock.json" }}
+          key: v5-frontend-dist-{{ checksum "web-app/package.json" }}
           paths:
             - web-app/dist
 
