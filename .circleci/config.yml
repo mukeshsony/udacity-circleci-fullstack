@@ -35,23 +35,28 @@ jobs:
             ls -lh package.json package-lock.json
             echo ""
             echo "Removing any cached node_modules..."
-            rm -rf node_modules
+            rm -rf node_modules package-lock.json
             echo "Running npm install (clean)..."
-            npm install --loglevel=verbose
+            npm install
+            echo ""
+            echo "Rebuilding to ensure bin links..."
+            npm rebuild
             echo ""
             echo "✅ Dependencies installed"
-            echo "Checking installation:"
+            echo "Verifying installation:"
             echo "  Total packages: $(ls node_modules | wc -l)"
-            echo "  node_modules contents (first 20):"
-            ls node_modules | head -20
-            echo "  .bin directory check:"
+            echo "  Checking @angular/cli:"
+            ls -la node_modules/@angular/cli 2>/dev/null | head -5 || echo "  @angular/cli not found"
+            echo "  Checking .bin directory:"
             if [ -d "node_modules/.bin" ]; then
-              echo "  ✅ .bin exists"
-              ls node_modules/.bin | head -10
+              echo "  ✅ .bin exists with $(ls node_modules/.bin | wc -l) binaries"
+              ls node_modules/.bin | grep ng
             else
-              echo "  ❌ .bin does NOT exist"
-              echo "  Checking for @angular/cli:"
-              ls -la node_modules/@angular/cli/bin 2>/dev/null || echo "  Angular CLI bin not found"
+              echo "  ❌ .bin does NOT exist - manually creating links"
+              mkdir -p node_modules/.bin
+              ln -sf ../node_modules/@angular/cli/bin/ng.js node_modules/.bin/ng
+              echo "  Manual link created, checking:"
+              ls -la node_modules/.bin/ng
             fi
 
       - save_cache:
