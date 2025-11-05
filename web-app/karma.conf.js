@@ -6,10 +6,11 @@ module.exports = function (config) {
       require('karma-jasmine'),
       require('karma-chrome-launcher'),
       require('karma-coverage'),
+      require('karma-jasmine-html-reporter'),
       require('@angular-devkit/build-angular/plugins/karma')
     ],
     client: {
-      clearContext: false // leave Jasmine Spec Runner output visible in browser
+      clearContext: false
     },
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage'),
@@ -19,25 +20,25 @@ module.exports = function (config) {
         { type: 'text-summary' }
       ]
     },
-    reporters: ['progress', 'coverage'],
+    reporters: ['progress', 'kjhtml'],
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
-    autoWatch: false,
-    browsers: ['ChromeHeadlessCI'],
+    autoWatch: true,
+    browsers: ['Chrome'],
+    singleRun: false,
+    restartOnFileChange: true,
+
+    // ---------- CI Custom Launcher ----------
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: [
-          '--no-sandbox',        // required for CircleCI
+          '--no-sandbox',
           '--disable-gpu',
-          '--disable-translate',
-          '--disable-extensions',
-          '--remote-debugging-port=9222'
+          '--disable-dev-shm-usage'
         ]
       }
-    },
-    singleRun: true,
-    restartOnFileChange: false
+    }
   });
 };
