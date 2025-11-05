@@ -22,29 +22,29 @@ jobs:
           keys:
             - v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
       - run:
-          name: Install Angular CLI
-          command: |
-            echo "Installing Angular CLI..."
-            npm install -g @angular/cli
-      - run:
           name: Install Frontend Dependencies
           command: |
             echo "Installing frontend dependencies..."
-            cd web-app && npm install
+            cd web-app && npm ci
       - save_cache:
           paths:
             - web-app/node_modules
           key: v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
       - run:
+          name: Install Puppeteer Chromium
+          command: |
+            echo "Installing Chromium for Puppeteer..."
+            cd web-app && npx puppeteer browsers install chrome
+      - run:
           name: Run Frontend Unit Tests
           command: |
             echo "Running frontend unit tests..."
-            cd web-app && npm test -- --watch=false --browsers=ChromeHeadless
+            cd web-app && npm run test:ci
       - run:
           name: Build Frontend
           command: |
             echo "Building frontend..."
-            cd web-app && ng build --prod
+            cd web-app && npm run build
       - persist_to_workspace:
           root: ~/repo
           paths:
@@ -70,7 +70,7 @@ jobs:
           name: Install Backend Dependencies
           command: |
             echo "Installing backend dependencies..."
-            cd web-api && npm install
+            cd web-api && npm ci
       - save_cache:
           paths:
             - web-api/node_modules
