@@ -30,11 +30,25 @@ jobs:
             echo "Node version: $(node -v)"
             echo "NPM version: $(npm -v)"
             echo "Checking package-lock.json: $([ -f "package-lock.json" ] && echo "EXISTS ($(wc -l < package-lock.json) lines)" || echo "MISSING")"
+            if [ ! -f "package-lock.json" ]; then
+              echo "ERROR: package-lock.json not found!"
+              ls -la
+              exit 1
+            fi
+            echo "package-lock.json first 20 lines:"
+            head -20 package-lock.json
+            echo "Searching for @angular/cli in package-lock.json:"
+            grep -c "@angular/cli" package-lock.json || echo "NOT FOUND"
             echo "Clearing node_modules to ensure clean install..."
             rm -rf node_modules
-            echo "Running npm ci for clean, reproducible install..."
-            npm ci
-            echo "✅ npm ci exit code: $?"
+            echo "Running npm ci with verbose output..."
+            npm ci --loglevel=verbose 2>&1 | tail -100
+            NPM_EXIT=$?
+            echo "✅ npm ci exit code: $NPM_EXIT"
+            if [ $NPM_EXIT -ne 0 ]; then
+              echo "ERROR: npm ci failed!"
+              exit 1
+            fi
             echo "=========================================="
             echo "� Checking installation results:"
             echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
