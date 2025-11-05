@@ -83,6 +83,74 @@ jobs:
           path: testing/dist
           destination: dist
 
+  test-web-app:
+    executor: node-browsers
+    steps:
+      - checkout
+      
+      # Restore cached dependencies
+      - restore_cache:
+          name: Restore npm dependencies cache
+          keys:
+            - v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
+            - v1-web-app-deps-
+      
+      # Install dependencies
+      - run:
+          name: Install Dependencies
+          command: |
+            cd web-app
+            echo "Node: $(node --version)"
+            echo "NPM: $(npm --version)"
+            npm ci
+      
+      # Save dependencies to cache
+      - save_cache:
+          name: Save npm dependencies cache
+          key: v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
+          paths:
+            - web-app/node_modules
+      
+      # Verify installation
+      - run:
+          name: Verify Installation
+          command: |
+            cd web-app
+            echo "Verifying @angular/cli installation..."
+            npm list @angular/cli
+            echo "Checking executables..."
+            ls -la node_modules/.bin/ | grep -E "ng|karma" || true
+      
+      # Run unit tests
+      - run:
+          name: Run Unit Tests
+          command: |
+            cd web-app
+            export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")
+            echo "Chrome binary path: $CHROME_BIN"
+            npm run test:ci
+      
+      # Build application
+      - run:
+          name: Build Application
+          command: |
+            cd web-app
+            npm run build --configuration=production
+      
+      # Store test results
+      - store_test_results:
+          path: web-app/coverage
+      
+      # Store test coverage artifacts
+      - store_artifacts:
+          path: web-app/coverage
+          destination: coverage
+      
+      # Store build artifacts
+      - store_artifacts:
+          path: web-app/dist
+          destination: dist
+
 # ================================================
 # WORKFLOWS - Orchestrate job execution
 # ================================================
@@ -91,3 +159,4 @@ workflows:
   test-and-build:
     jobs:
       - test-angular-app
+      - test-web-app
