@@ -1,4 +1,3 @@
-// karma.conf.js
 module.exports = function (config) {
   config.set({
     basePath: '',
@@ -25,29 +24,23 @@ module.exports = function (config) {
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
-    autoWatch: true,
-    singleRun: false,
-    restartOnFileChange: true,
+    autoWatch: false,
+    browsers: ['ChromeHeadlessCI'], // default browser for CI
+    singleRun: true,
+    restartOnFileChange: false,
 
-    // Define custom launcher for CI
+    // Custom launcher for CI environment
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: [
-          '--no-sandbox',
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
+          '--no-sandbox',              // required for Docker/CI
+          '--disable-gpu',             // disable GPU acceleration
+          '--disable-dev-shm-usage',   // overcome limited resources
           '--disable-software-rasterizer',
-          '--disable-extensions',
-          '--remote-debugging-port=9222'
+          '--disable-extensions'
         ]
       }
-    },
-
-    // 👇 Use ChromeHeadlessCI by default in CI mode
-    browsers: process.env.CI ? ['ChromeHeadlessCI'] : ['Chrome'],
-
-    // Ensure Angular CLI test runner integrates correctly
-    browserNoActivityTimeout: 60000
+    }
   });
 };

@@ -31,8 +31,15 @@ jobs:
             cd web-app
             echo "Node version: $(node -v)"
             echo "NPM version: $(npm -v)"
-            npm install
+            npm ci
             echo "✅ Dependencies installed."
+            echo "📂 Checking node_modules/.bin:"
+            ls -la node_modules/.bin | head -20
+            echo "🔍 Checking if @angular/cli is installed:"
+            npm list @angular/cli
+            echo "🔍 Verifying Angular CLI executable:"
+            which ng || echo "ng not found"
+            npx ng version
 
       - save_cache:
           paths:
@@ -44,12 +51,6 @@ jobs:
           command: |
             echo "=========================================="
             echo "🧪 Running frontend unit tests..."
-            echo "=========================================="
-            echo "📂 Listing checkout directory contents:"
-            ls -la
-            echo "=========================================="
-            echo "📂 Listing web-app folder contents:"
-            ls -la web-app
             echo "=========================================="
             cd web-app
             npm run test:ci
@@ -68,15 +69,6 @@ jobs:
           key: v3-frontend-dist-{{ checksum "web-app/package-lock.json" }}
           paths:
             - web-app/dist
-
-      - run:
-          name: 🚀 Skip deploy if frontend build cache unchanged
-          command: |
-            echo "Checking if frontend build changed..."
-            if [ -d "web-app/dist" ]; then
-              echo "✅ Build exists, skipping deploy."
-              circleci step halt
-            fi
 
       - store_artifacts:
           path: web-app/dist
@@ -136,15 +128,6 @@ jobs:
           key: v3-backend-dist-{{ checksum "web-api/package-lock.json" }}
           paths:
             - web-api/dist
-
-      - run:
-          name: 🚀 Skip deploy if backend build cache unchanged
-          command: |
-            echo "Checking if backend build changed..."
-            if [ -d "web-api/dist" ]; then
-              echo "✅ Build exists, skipping deploy."
-              circleci step halt
-            fi
 
       - store_artifacts:
           path: web-api/dist
