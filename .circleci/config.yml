@@ -154,23 +154,20 @@ jobs:
           path: testing/dist
           destination: dist
 
-  # ================================================
-  # UDACITY WEB-APP (COMMENTED OUT)
-  # ================================================
-  # udacity-web-app:
-  #   executor: node-browsers
-  #   steps:
-  #     - checkout
-  #     
-  #     # Restore cached dependencies
-  #     - restore_cache:
-  #         name: Restore npm dependencies cache
-  #         keys:
-  #           - v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
-  #           - v1-web-app-deps-
-  #     
-  #     # Install dependencies
-  #     - run:
+  udacity-web-app:
+    executor: node-browsers
+    steps:
+      - checkout
+      
+      # Restore cached dependencies
+      - restore_cache:
+          name: Restore npm dependencies cache
+          keys:
+            - v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
+            - v1-web-app-deps-
+      
+      # Install dependencies
+      - run:
           name: Install Dependencies
           command: |
             echo "=========================================="
