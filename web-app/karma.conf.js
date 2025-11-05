@@ -19,26 +19,25 @@ module.exports = function (config) {
         { type: 'text-summary' }
       ]
     },
-    reporters: ['progress', 'kjhtml'],
+    reporters: ['progress', 'coverage'],
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: false,
     browsers: ['ChromeHeadlessCI'],
-    singleRun: true,
-    restartOnFileChange: false,
-
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: [
-          '--no-sandbox', 
-          '--disable-gpu', 
-          '--disable-translate', 
-          '--disable-extensions', 
+          '--no-sandbox',        // required for CircleCI
+          '--disable-gpu',
+          '--disable-translate',
+          '--disable-extensions',
           '--remote-debugging-port=9222'
         ]
       }
-    }
+    },
+    singleRun: true,
+    restartOnFileChange: false
   });
 };
