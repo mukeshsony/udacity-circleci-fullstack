@@ -34,14 +34,25 @@ jobs:
             echo "Checking package files:"
             ls -lh package.json package-lock.json
             echo ""
-            echo "Running npm install..."
-            npm install --loglevel=info
-            echo "✅ Dependencies installed"
+            echo "Removing any cached node_modules..."
+            rm -rf node_modules
+            echo "Running npm install (clean)..."
+            npm install --loglevel=verbose
             echo ""
-            echo "node_modules directory:"
-            ls -ld node_modules
-            echo "node_modules/.bin directory:"
-            ls -l node_modules/.bin | head -10 || echo ".bin folder does not exist"
+            echo "✅ Dependencies installed"
+            echo "Checking installation:"
+            echo "  Total packages: $(ls node_modules | wc -l)"
+            echo "  node_modules contents (first 20):"
+            ls node_modules | head -20
+            echo "  .bin directory check:"
+            if [ -d "node_modules/.bin" ]; then
+              echo "  ✅ .bin exists"
+              ls node_modules/.bin | head -10
+            else
+              echo "  ❌ .bin does NOT exist"
+              echo "  Checking for @angular/cli:"
+              ls -la node_modules/@angular/cli/bin 2>/dev/null || echo "  Angular CLI bin not found"
+            fi
 
       - save_cache:
           paths:
