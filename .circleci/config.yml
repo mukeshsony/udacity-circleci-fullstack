@@ -15,10 +15,11 @@ jobs:
     steps:
       - checkout
 
-      - restore_cache:
-          keys:
-            - v4-frontend-node-{{ checksum "web-app/package-lock.json" }}
-            - v4-frontend-node-
+      # Temporarily disabled cache to diagnose issue
+      # - restore_cache:
+      #     keys:
+      #       - v4-frontend-node-{{ checksum "web-app/package-lock.json" }}
+      #       - v4-frontend-node-
 
       - run:
           name: 📦 Install Frontend Dependencies
