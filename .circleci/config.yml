@@ -1,797 +1,400 @@
-version: 2.1version: 2.1
-
-
-
-# ================================================# ================================================
-
-# EXECUTORS - Reusable execution environments# EXECUTORS - Reusable execution environments
-
-# ================================================# ================================================
-
-executors:executors:
-
-  node-browsers:  node-browsers:
-
-    docker:    docker:
-
-      - image: cimg/node:20.17-browsers      - image: cimg/node:20.17-browsers
-
-    working_directory: ~/project    working_directory: ~/project
-
-    environment:    environment:
-
-      NODE_ENV: test      NODE_ENV: test
-
-
-
-  aws-cli:  aws-cli:
-
-    docker:    docker:
-
-      - image: cimg/aws:2024.03      - image: cimg/aws:2024.03
-
-    working_directory: ~/project    working_directory: ~/project
-
-
-
-# ================================================# ================================================
-
-# JOBS - Individual units of work# JOBS - Individual units of work
-
-# ================================================# ================================================
-
-jobs:jobs:
-
-  test-angular-app:  test-angular-app:
-
-    executor: node-browsers    executor: node-browsers
-
-    steps:    steps:
-
-      - checkout      - checkout
-
-            
-
-      # Restore cached dependencies      # Restore cached dependencies
-
-      - restore_cache:      - restore_cache:
-
-          name: Restore npm dependencies cache          name: Restore npm dependencies cache
-
-          keys:          keys:
-
-            - v1-testing-deps-{{ checksum "testing/package-lock.json" }}            - v1-testing-deps-{{ checksum "testing/package-lock.json" }}
-
-            - v1-testing-deps-            - v1-testing-deps-
-
-            
-
-      # Install dependencies      # Install dependencies
-
-      - run:      - run:
-
-          name: Install Dependencies          name: Install Dependencies
-
-          command: |          command: |
-
-            echo "=========================================="            echo "=========================================="
-
-            echo "📦 Installing testing app dependencies..."            echo "📦 Installing testing app dependencies..."
-
-            echo "=========================================="            echo "=========================================="
-
-            cd testing            cd testing
-
-            echo "Node version: $(node --version)"            echo "Node version: $(node --version)"
-
-            echo "NPM version: $(npm --version)"            echo "NPM version: $(npm --version)"
-
-            echo "Current directory: $(pwd)"            echo "Current directory: $(pwd)"
-
-            echo "=========================================="            echo "=========================================="
-
-            echo "Package.json exists: $([ -f package.json ] && echo 'YES' || echo 'NO')"            echo "Package.json exists: $([ -f package.json ] && echo 'YES' || echo 'NO')"
-
-            echo "Package-lock.json exists: $([ -f package-lock.json ] && echo 'YES' || echo 'NO')"            echo "Package-lock.json exists: $([ -f package-lock.json ] && echo 'YES' || echo 'NO')"
-
-            echo "=========================================="            echo "=========================================="
-
-            echo "Running npm ci..."            echo "Running npm ci..."
-
-            npm ci            npm ci
-
-            NPM_EXIT=$?            NPM_EXIT=$?
-
-            echo "=========================================="            echo "=========================================="
-
-            echo "✅ npm ci exit code: $NPM_EXIT"            echo "✅ npm ci exit code: $NPM_EXIT"
-
-            if [ $NPM_EXIT -ne 0 ]; then            if [ $NPM_EXIT -ne 0 ]; then
-
-              echo "❌ ERROR: npm ci failed!"              echo "❌ ERROR: npm ci failed!"
-
-              exit 1              exit 1
-
-            fi            fi
-
-            echo "Total packages installed: $(ls node_modules 2>/dev/null | wc -l)"            echo "=========================================="
-
-            echo "=========================================="      
-
-            # Save dependencies to cache
-
-      # Save dependencies to cache      - save_cache:
-
-      - save_cache:          name: Save npm dependencies cache
-
-          name: Save npm dependencies cache          key: v1-testing-deps-{{ checksum "testing/package-lock.json" }}
-
-          key: v1-testing-deps-{{ checksum "testing/package-lock.json" }}          paths:
-
-          paths:            - testing/node_modules
-
-            - testing/node_modules      
-
-            # Verify installation
-
-      # Verify installation      - run:
-
-      - run:          name: Verify Installation
-
-          name: Verify Installation          command: |
-
-          command: |            echo "=========================================="
-
-            echo "=========================================="            echo "🔍 Verifying testing app installation..."
-
-            echo "🔍 Verifying testing app installation..."            echo "=========================================="
-
-            echo "=========================================="            cd testing
-
-            cd testing            echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
-
-            echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"            echo "----------------------------------------"
-
-            echo "----------------------------------------"            echo "Checking @angular/cli installation:"
-
-            echo "Checking @angular/cli installation:"            npm list @angular/cli || echo "⚠️ @angular/cli not found in npm list"
-
-            npm list @angular/cli || echo "⚠️ @angular/cli not found in npm list"            echo "----------------------------------------"
-
-            echo "----------------------------------------"            echo "Checking executables in .bin directory:"
-
-            echo "Checking executables in .bin directory:"            if [ -d "node_modules/.bin" ]; then
-
-            if [ -d "node_modules/.bin" ]; then              echo "✅ node_modules/.bin exists"
-
-              echo "✅ node_modules/.bin exists"              echo "Executables count: $(ls node_modules/.bin 2>/dev/null | wc -l)"
-
-              echo "Executables count: $(ls node_modules/.bin 2>/dev/null | wc -l)"              ls -la node_modules/.bin | grep -E "ng|karma" || echo "⚠️ ng or karma not found"
-
-              ls -la node_modules/.bin | grep -E "ng|karma" || echo "⚠️ ng or karma not found"            else
-
-            else              echo "❌ node_modules/.bin directory NOT FOUND!"
-
-              echo "❌ node_modules/.bin directory NOT FOUND!"            fi
-
-            fi            echo "=========================================="
-
-            echo "=========================================="      
-
-            # Run unit tests
-
-      # Run unit tests      - run:
-
-      - run:          name: Run Unit Tests
-
-          name: Run Unit Tests          command: |
-
-          command: |            echo "=========================================="
-
-            echo "=========================================="            echo "🧪 Running testing app unit tests..."
-
-            echo "🧪 Running testing app unit tests..."            echo "=========================================="
-
-            echo "=========================================="            cd testing
-
-            cd testing            export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")
-
-            export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")            echo "Chrome binary path: $CHROME_BIN"
-
-            echo "Chrome binary path: $CHROME_BIN"            echo "Chrome exists: $([ -f "$CHROME_BIN" ] && echo 'YES' || echo 'NO')"
-
-            echo "Chrome exists: $([ -f "$CHROME_BIN" ] && echo 'YES' || echo 'NO')"            echo "----------------------------------------"
-
-            echo "----------------------------------------"            echo "Starting Karma test runner..."
-
-            echo "Starting Karma test runner..."            npm run test:ci
-
-            npm run test:ci            TEST_EXIT=$?
-
-            TEST_EXIT=$?            echo "=========================================="
-
-            echo "=========================================="            echo "✅ Test exit code: $TEST_EXIT"
-
-            echo "✅ Test exit code: $TEST_EXIT"            if [ $TEST_EXIT -ne 0 ]; then
-
-            if [ $TEST_EXIT -ne 0 ]; then              echo "❌ ERROR: Tests failed!"
-
-              echo "❌ ERROR: Tests failed!"              exit 1
-
-              exit 1            fi
-
-            fi            echo "All tests passed successfully!"
-
-            echo "All tests passed successfully!"            echo "=========================================="
-
-            echo "=========================================="      
-
-            # Build application
-
-      # Build application      - run:
-
-      - run:          name: Build Application
-
-          name: Build Application          command: |
-
-          command: |            echo "=========================================="
-
-            echo "=========================================="            echo "🏗️ Building testing app for production..."
-
-            echo "🏗️ Building testing app for production..."            echo "=========================================="
-
-            echo "=========================================="            cd testing
-
-            cd testing            npm run build --configuration=production
-
-            npm run build --configuration=production            BUILD_EXIT=$?
-
-            BUILD_EXIT=$?            echo "=========================================="
-
-            echo "=========================================="            echo "✅ Build exit code: $BUILD_EXIT"
-
-            echo "✅ Build exit code: $BUILD_EXIT"            if [ $BUILD_EXIT -ne 0 ]; then
-
-            if [ $BUILD_EXIT -ne 0 ]; then              echo "❌ ERROR: Build failed!"
-
-              echo "❌ ERROR: Build failed!"              exit 1
-
-              exit 1            fi
-
-            fi            echo "Checking build output:"
-
-            echo "Checking build output:"            if [ -d "dist" ]; then
-
-            if [ -d "dist" ]; then              echo "✅ dist directory created"
-
-              echo "✅ dist directory created"              echo "Build size: $(du -sh dist)"
-
-              echo "Build size: $(du -sh dist)"              echo "Files in dist: $(find dist -type f | wc -l)"
-
-              echo "Files in dist: $(find dist -type f | wc -l)"              ls -la dist/
-
-              ls -la dist/            else
-
-            else              echo "❌ dist directory not found!"
-
-              echo "❌ dist directory not found!"              exit 1
-
-              exit 1            fi
-
-            fi            echo "=========================================="
-
-            echo "=========================================="      
-
-            # Store test results
-
-      # Store test results      - store_test_results:
-
-      - store_test_results:          path: testing/coverage
-
-          path: testing/coverage      
-
-            # Store test coverage artifacts
-
-      # Store test coverage artifacts      - store_artifacts:
-
-      - store_artifacts:          path: testing/coverage
-
-          path: testing/coverage          destination: coverage
-
-          destination: coverage      
-
-            # Store build artifacts
-
-      # Store build artifacts      - store_artifacts:
-
-      - store_artifacts:          path: testing/dist
-
-          path: testing/dist          destination: dist
-
+version: 2.1
+
+# ================================================
+# EXECUTORS - Reusable execution environments
+# ================================================
+executors:
+  node-browsers:
+    docker:
+      - image: cimg/node:20.17-browsers
+    working_directory: ~/project
+    environment:
+      NODE_ENV: test
+
+  aws-cli:
+    docker:
+      - image: cimg/aws:2024.03
+    working_directory: ~/project
+
+# ================================================
+# JOBS - Individual units of work
+# ================================================
+jobs:
+  test-angular-app:
+    executor: node-browsers
+    steps:
+      - checkout
+      
+      # Restore cached dependencies
+      - restore_cache:
+          name: Restore npm dependencies cache
+          keys:
+            - v1-testing-deps-{{ checksum "testing/package-lock.json" }}
+            - v1-testing-deps-
+      
+      # Install dependencies
+      - run:
+          name: Install Dependencies
+          command: |
+            echo "=========================================="
+            echo "📦 Installing testing app dependencies..."
+            echo "=========================================="
+            cd testing
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "Current directory: $(pwd)"
+            echo "=========================================="
+            echo "Package.json exists: $([ -f package.json ] && echo 'YES' || echo 'NO')"
+            echo "Package-lock.json exists: $([ -f package-lock.json ] && echo 'YES' || echo 'NO')"
+            echo "=========================================="
+            echo "Running npm ci..."
+            npm ci
+            NPM_EXIT=$?
+            echo "=========================================="
+            echo "✅ npm ci exit code: $NPM_EXIT"
+            if [ $NPM_EXIT -ne 0 ]; then
+              echo "❌ ERROR: npm ci failed!"
+              exit 1
+            fi
+            echo "=========================================="
+      
+      # Save dependencies to cache
+      - save_cache:
+          name: Save npm dependencies cache
+          key: v1-testing-deps-{{ checksum "testing/package-lock.json" }}
+          paths:
+            - testing/node_modules
+      
+      # Verify installation
+      - run:
+          name: Verify Installation
+          command: |
+            echo "=========================================="
+            echo "🔍 Verifying testing app installation..."
+            echo "=========================================="
+            cd testing
+            echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
+            echo "----------------------------------------"
+            echo "Checking @angular/cli installation:"
+            npm list @angular/cli || echo "⚠️ @angular/cli not found in npm list"
+            echo "----------------------------------------"
+            echo "Checking executables in .bin directory:"
+            if [ -d "node_modules/.bin" ]; then
+              echo "✅ node_modules/.bin exists"
+              echo "Executables count: $(ls node_modules/.bin 2>/dev/null | wc -l)"
+              ls -la node_modules/.bin | grep -E "ng|karma" || echo "⚠️ ng or karma not found"
+            else
+              echo "❌ node_modules/.bin directory NOT FOUND!"
+            fi
+            echo "=========================================="
+      
+      # Run unit tests
+      - run:
+          name: Run Unit Tests
+          command: |
+            echo "=========================================="
+            echo "🧪 Running testing app unit tests..."
+            echo "=========================================="
+            cd testing
+            export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")
+            echo "Chrome binary path: $CHROME_BIN"
+            echo "Chrome exists: $([ -f "$CHROME_BIN" ] && echo 'YES' || echo 'NO')"
+            echo "----------------------------------------"
+            echo "Starting Karma test runner..."
+            npm run test:ci
+            TEST_EXIT=$?
+            echo "=========================================="
+            echo "✅ Test exit code: $TEST_EXIT"
+            if [ $TEST_EXIT -ne 0 ]; then
+              echo "❌ ERROR: Tests failed!"
+              exit 1
+            fi
+            echo "All tests passed successfully!"
+            echo "=========================================="
+      
+      # Build application
+      - run:
+          name: Build Application
+          command: |
+            echo "=========================================="
+            echo "🏗️ Building testing app for production..."
+            echo "=========================================="
+            cd testing
+            npm run build --configuration=production
+            BUILD_EXIT=$?
+            echo "=========================================="
+            echo "✅ Build exit code: $BUILD_EXIT"
+            if [ $BUILD_EXIT -ne 0 ]; then
+              echo "❌ ERROR: Build failed!"
+              exit 1
+            fi
+            echo "Checking build output:"
+            if [ -d "dist" ]; then
+              echo "✅ dist directory created"
+              echo "Build size: $(du -sh dist)"
+              echo "Files in dist: $(find dist -type f | wc -l)"
+              ls -la dist/
+            else
+              echo "❌ dist directory not found!"
+              exit 1
+            fi
+            echo "=========================================="
+      
+      # Store test results
+      - store_test_results:
+          path: testing/coverage
+      
+      # Store test coverage artifacts
+      - store_artifacts:
+          path: testing/coverage
+          destination: coverage
+      
+      # Store build artifacts
+      - store_artifacts:
+          path: testing/dist
           destination: dist
 
   # ================================================
-
-  # ================================================  # UDACITY WEB-APP (COMMENTED OUT)
-
-  # UDACITY WEB-APP JOB (COMMENTED OUT)  # ================================================
-
-  # Uncomment when ready to test web-app  # udacity-web-app:
-
-  # ================================================  #   executor: node-browsers
-
-  # udacity-web-app:  #   steps:
-
-  #   executor: node-browsers  #     - checkout
-
-  #   steps:  #     
-
-  #     - checkout  #     # Restore cached dependencies
-
-  #     - restore_cache:  #     - restore_cache:
-
-  #         name: Restore npm dependencies cache  #         name: Restore npm dependencies cache
-
-  #         keys:  #         keys:
-
-  #           - v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}  #           - v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
-
-  #           - v1-web-app-deps-  #           - v1-web-app-deps-
-
-  #     - run:  #     
-
-  #         name: Install Dependencies  #     # Install dependencies
-
-  #         command: |  #     - run:
-
-  #           echo "=========================================="          name: Install Dependencies
-
-  #           echo "📦 Installing web-app dependencies..."          command: |
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           cd web-app            echo "📦 Installing web-app dependencies..."
-
-  #           npm ci            echo "=========================================="
-
-  #           echo "=========================================="            cd web-app
-
-  #     - save_cache:            echo "Node version: $(node --version)"
-
-  #         name: Save npm dependencies cache            echo "NPM version: $(npm --version)"
-
-  #         key: v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}            echo "Current directory: $(pwd)"
-
-  #         paths:            echo "=========================================="
-
-  #           - web-app/node_modules            echo "Package.json exists: $([ -f package.json ] && echo 'YES' || echo 'NO')"
-
-  #     - run:            echo "Package-lock.json exists: $([ -f package-lock.json ] && echo 'YES' || echo 'NO')"
-
-  #         name: Verify Installation            echo "=========================================="
-
-  #         command: |            echo "Running npm ci..."
-
-  #           echo "=========================================="            npm ci 2>&1 | tee /tmp/npm-ci.log
-
-  #           echo "🔍 Verifying web-app installation..."            NPM_EXIT=$?
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           cd web-app            echo "✅ npm ci exit code: $NPM_EXIT"
-
-  #           npm list @angular/cli            if [ $NPM_EXIT -ne 0 ]; then
-
-  #           echo "=========================================="              echo "❌ ERROR: npm ci failed!"
-
-  #     - run:              exit 1
-
-  #         name: Run Unit Tests            fi
-
-  #         command: |            echo "=========================================="
-
-  #           echo "=========================================="      
-
-  #           echo "🧪 Running web-app unit tests..."      # Save dependencies to cache
-
-  #           echo "=========================================="      - save_cache:
-
-  #           cd web-app          name: Save npm dependencies cache
-
-  #           export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")          key: v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
-
-  #           npm run test:ci          paths:
-
-  #           echo "=========================================="            - web-app/node_modules
-
-  #     - run:      
-
-  #         name: Build Application      # Verify installation
-
-  #         command: |      - run:
-
-  #           echo "=========================================="          name: Verify Installation
-
-  #           echo "🏗️ Building web-app for production..."          command: |
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           cd web-app            echo "🔍 Verifying web-app installation..."
-
-  #           npm run build --configuration=production            echo "=========================================="
-
-  #           echo "=========================================="            cd web-app
-
-  #     - store_test_results:            echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
-
-  #         path: web-app/coverage            echo "----------------------------------------"
-
-  #     - store_artifacts:            echo "Checking @angular/cli installation:"
-
-  #         path: web-app/coverage            npm list @angular/cli || echo "⚠️ @angular/cli not found in npm list"
-
-  #         destination: coverage            echo "----------------------------------------"
-
-  #     - store_artifacts:            echo "Checking executables in .bin directory:"
-
-  #         path: web-app/dist            if [ -d "node_modules/.bin" ]; then
-
-  #         destination: dist              echo "✅ node_modules/.bin exists"
-
-  #     - persist_to_workspace:              echo "Executables count: $(ls node_modules/.bin 2>/dev/null | wc -l)"
-
-  #         root: ~/project              ls -la node_modules/.bin | grep -E "ng|karma" || echo "⚠️ ng or karma not found"
-
-  #         paths:            else
-
-  #           - web-app/dist              echo "❌ node_modules/.bin directory NOT FOUND!"
-
-            fi
-
-  # ================================================            echo "=========================================="
-
-  # UDACITY WEB-API JOB (COMMENTED OUT)      
-
-  # Uncomment when ready to test web-api      # Run unit tests
-
-  # ================================================      - run:
-
-  # udacity-web-api:          name: Run Unit Tests
-
-  #   executor: node-browsers          command: |
-
-  #   steps:            echo "=========================================="
-
-  #     - checkout            echo "🧪 Running web-app unit tests..."
-
-  #     - restore_cache:            echo "=========================================="
-
-  #         name: Restore npm dependencies cache            cd web-app
-
-  #         keys:            export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")
-
-  #           - v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}            echo "Chrome binary path: $CHROME_BIN"
-
-  #           - v1-web-api-deps-            echo "Chrome exists: $([ -f "$CHROME_BIN" ] && echo 'YES' || echo 'NO')"
-
-  #     - run:            echo "----------------------------------------"
-
-  #         name: Install Dependencies            echo "Starting Karma test runner..."
-
-  #         command: |            npm run test:ci
-
-  #           echo "=========================================="            TEST_EXIT=$?
-
-  #           echo "📦 Installing web-api dependencies..."            echo "=========================================="
-
-  #           echo "=========================================="            echo "✅ Test exit code: $TEST_EXIT"
-
-  #           cd web-api            if [ $TEST_EXIT -ne 0 ]; then
-
-  #           npm ci              echo "❌ ERROR: Tests failed!"
-
-  #           echo "=========================================="              exit 1
-
-  #     - save_cache:            fi
-
-  #         name: Save npm dependencies cache            echo "All tests passed successfully!"
-
-  #         key: v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}            echo "=========================================="
-
-  #         paths:      
-
-  #           - web-api/node_modules      # Build application
-
-  #     - run:      - run:
-
-  #         name: Verify Installation          name: Build Application
-
-  #         command: |          command: |
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           echo "🔍 Verifying web-api installation..."            echo "🏗️ Building web-app for production..."
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           cd web-api            cd web-app
-
-  #           npm list --depth=0            npm run build --configuration=production
-
-  #           echo "=========================================="            BUILD_EXIT=$?
-
-  #     - run:            echo "=========================================="
-
-  #         name: Run Unit Tests            echo "✅ Build exit code: $BUILD_EXIT"
-
-  #         command: |            if [ $BUILD_EXIT -ne 0 ]; then
-
-  #           echo "=========================================="              echo "❌ ERROR: Build failed!"
-
-  #           echo "🧪 Running web-api unit tests..."              exit 1
-
-  #           echo "=========================================="            fi
-
-  #           cd web-api            echo "Checking build output:"
-
-  #           npm test            if [ -d "dist" ]; then
-
-  #           echo "=========================================="              echo "✅ dist directory created"
-
-  #     - run:              echo "Build size: $(du -sh dist)"
-
-  #         name: Build Application              echo "Files in dist: $(find dist -type f | wc -l)"
-
-  #         command: |            else
-
-  #           echo "=========================================="              echo "❌ dist directory not found!"
-
-  #           echo "🏗️ Building web-api..."              exit 1
-
-  #           echo "=========================================="            fi
-
-  #           cd web-api            echo "=========================================="
-
-  #           npm run build      
-
-  #           echo "=========================================="      # Store test results
-
-  #     - store_artifacts:      - store_test_results:
-
-  #         path: web-api/dist          path: web-app/coverage
-
-  #         destination: dist      
-
-  #     - persist_to_workspace:      # Store test coverage artifacts
-
-  #         root: ~/project      - store_artifacts:
-
-  #         paths:          path: web-app/coverage
-
-  #           - web-api/dist          destination: coverage
-
-      
-
-  # ================================================      # Store build artifacts
-
-  # DEPLOY FRONTEND (COMMENTED OUT)      - store_artifacts:
-
-  # Uncomment when ready to deploy          path: web-app/dist
-
-  # ================================================          destination: dist
-
-  # deploy-frontend:      
-
-  #   executor: aws-cli      # Persist build artifacts for deployment
-
-  #   steps:      - persist_to_workspace:
-
-  #     - checkout          root: ~/project
-
-  #     - attach_workspace:          paths:
-
-  #         at: ~/project            - web-app/dist
-
+  # UDACITY WEB-APP (COMMENTED OUT)
+  # ================================================
+  # udacity-web-app:
+  #   executor: node-browsers
+  #   steps:
+  #     - checkout
+  #     
+  #     # Restore cached dependencies
+  #     - restore_cache:
+  #         name: Restore npm dependencies cache
+  #         keys:
+  #           - v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
+  #           - v1-web-app-deps-
+  #     
+  #     # Install dependencies
   #     - run:
-
-  #         name: Install Node.js  udacity-web-api:
-
-  #         command: |    executor: node-browsers
-
-  #           echo "=========================================="    steps:
-
-  #           echo "📦 Installing Node.js..."      - checkout
-
-  #           echo "=========================================="      
-
-  #           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -      # Restore cached dependencies
-
-  #           sudo apt-get install -y nodejs      - restore_cache:
-
-  #           echo "=========================================="          name: Restore npm dependencies cache
-
-  #     - restore_cache:          keys:
-
-  #         keys:            - v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}
-
-  #           - v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}            - v1-web-api-deps-
-
-  #     - run:      
-
-  #         name: Rebuild Frontend      # Install dependencies
-
-  #         command: |      - run:
-
-  #           echo "=========================================="          name: Install Dependencies
-
-  #           echo "🏗️ Rebuilding frontend..."          command: |
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           cd web-app            echo "📦 Installing web-api dependencies..."
-
-  #           npm ci            echo "=========================================="
-
-  #           npm run build --configuration=production            cd web-api
-
-  #           echo "=========================================="            echo "Node version: $(node --version)"
-
-  #     - run:            echo "NPM version: $(npm --version)"
-
-  #         name: Deploy to AWS S3            echo "Current directory: $(pwd)"
-
-  #         command: |            echo "=========================================="
-
-  #           echo "=========================================="            echo "Package.json exists: $([ -f package.json ] && echo 'YES' || echo 'NO')"
-
-  #           echo "☁️ Deploying to S3..."            echo "Package-lock.json exists: $([ -f package-lock.json ] && echo 'YES' || echo 'NO')"
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           cd web-app            echo "Running npm ci..."
-
-  #           aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ --delete --acl public-read            npm ci
-
-  #           echo "=========================================="            NPM_EXIT=$?
-
-  #     - run:            echo "=========================================="
-
-  #         name: Invalidate CloudFront            echo "✅ npm ci exit code: $NPM_EXIT"
-
-  #         command: |            if [ $NPM_EXIT -ne 0 ]; then
-
-  #           echo "=========================================="              echo "❌ ERROR: npm ci failed!"
-
-  #           echo "🔄 Invalidating CloudFront..."              exit 1
-
-  #           echo "=========================================="            fi
-
-  #           aws cloudfront create-invalidation --distribution-id ${AWS_CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"            echo "Total packages installed: $(ls node_modules 2>/dev/null | wc -l)"
-
-  #           echo "=========================================="            echo "=========================================="
-
+          name: Install Dependencies
+          command: |
+            echo "=========================================="
+            echo "📦 Installing web-app dependencies..."
+            echo "=========================================="
+            cd web-app
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "Current directory: $(pwd)"
+            echo "=========================================="
+            echo "Package.json exists: $([ -f package.json ] && echo 'YES' || echo 'NO')"
+            echo "Package-lock.json exists: $([ -f package-lock.json ] && echo 'YES' || echo 'NO')"
+            echo "=========================================="
+            echo "Running npm ci..."
+            npm ci 2>&1 | tee /tmp/npm-ci.log
+            NPM_EXIT=$?
+            echo "=========================================="
+            echo "✅ npm ci exit code: $NPM_EXIT"
+            if [ $NPM_EXIT -ne 0 ]; then
+              echo "❌ ERROR: npm ci failed!"
+              exit 1
+            fi
+            echo "=========================================="
       
-
-  # ================================================      # Save dependencies to cache
-
-  # DEPLOY BACKEND (COMMENTED OUT)      - save_cache:
-
-  # Uncomment when ready to deploy          name: Save npm dependencies cache
-
-  # ================================================          key: v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}
-
-  # deploy-backend:          paths:
-
-  #   executor: aws-cli            - web-api/node_modules
-
-  #   steps:      
-
-  #     - checkout      # Verify installation
-
-  #     - attach_workspace:      - run:
-
-  #         at: ~/project          name: Verify Installation
-
-  #     - run:          command: |
-
-  #         name: Install EB CLI            echo "=========================================="
-
-  #         command: |            echo "🔍 Verifying web-api installation..."
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           echo "📦 Installing EB CLI..."            cd web-api
-
-  #           echo "=========================================="            echo "Checking installed packages (depth=0):"
-
-  #           pip3 install awsebcli --upgrade --user            npm list --depth=0 || echo "⚠️ Some peer dependency warnings (expected)"
-
-  #           echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV            echo "=========================================="
-
-  #           source $BASH_ENV      
-
-  #           echo "=========================================="      # Run unit tests
-
-  #     - run:      - run:
-
-  #         name: Deploy to Elastic Beanstalk          name: Run Unit Tests
-
-  #         command: |          command: |
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           echo "🚀 Deploying to EB..."            echo "🧪 Running web-api unit tests..."
-
-  #           echo "=========================================="            echo "=========================================="
-
-  #           cd web-api            cd web-api
-
-  #           if [ ! -d ".elasticbeanstalk" ]; then            npm test
-
-  #             mkdir -p .elasticbeanstalk            TEST_EXIT=$?
-
-  #             eb init ${EB_APP_NAME} --platform node.js --region ${AWS_DEFAULT_REGION}            echo "=========================================="
-
-  #           fi            echo "✅ Test exit code: $TEST_EXIT"
-
-  #           eb use ${EB_ENV_NAME}            if [ $TEST_EXIT -ne 0 ]; then
-
-  #           eb deploy ${EB_ENV_NAME} --verbose              echo "❌ ERROR: Tests failed!"
-
-  #           eb status ${EB_ENV_NAME}              exit 1
-
-  #           echo "=========================================="            fi
-
+      # Save dependencies to cache
+      - save_cache:
+          name: Save npm dependencies cache
+          key: v1-web-app-deps-{{ checksum "web-app/package-lock.json" }}
+          paths:
+            - web-app/node_modules
+      
+      # Verify installation
+      - run:
+          name: Verify Installation
+          command: |
+            echo "=========================================="
+            echo "🔍 Verifying web-app installation..."
+            echo "=========================================="
+            cd web-app
+            echo "Total packages in node_modules: $(ls node_modules 2>/dev/null | wc -l)"
+            echo "----------------------------------------"
+            echo "Checking @angular/cli installation:"
+            npm list @angular/cli || echo "⚠️ @angular/cli not found in npm list"
+            echo "----------------------------------------"
+            echo "Checking executables in .bin directory:"
+            if [ -d "node_modules/.bin" ]; then
+              echo "✅ node_modules/.bin exists"
+              echo "Executables count: $(ls node_modules/.bin 2>/dev/null | wc -l)"
+              ls -la node_modules/.bin | grep -E "ng|karma" || echo "⚠️ ng or karma not found"
+            else
+              echo "❌ node_modules/.bin directory NOT FOUND!"
+            fi
+            echo "=========================================="
+      
+      # Run unit tests
+      - run:
+          name: Run Unit Tests
+          command: |
+            echo "=========================================="
+            echo "🧪 Running web-app unit tests..."
+            echo "=========================================="
+            cd web-app
+            export CHROME_BIN=$(node -p "require('puppeteer').executablePath()")
+            echo "Chrome binary path: $CHROME_BIN"
+            echo "Chrome exists: $([ -f "$CHROME_BIN" ] && echo 'YES' || echo 'NO')"
+            echo "----------------------------------------"
+            echo "Starting Karma test runner..."
+            npm run test:ci
+            TEST_EXIT=$?
+            echo "=========================================="
+            echo "✅ Test exit code: $TEST_EXIT"
+            if [ $TEST_EXIT -ne 0 ]; then
+              echo "❌ ERROR: Tests failed!"
+              exit 1
+            fi
             echo "All tests passed successfully!"
+            echo "=========================================="
+      
+      # Build application
+      - run:
+          name: Build Application
+          command: |
+            echo "=========================================="
+            echo "🏗️ Building web-app for production..."
+            echo "=========================================="
+            cd web-app
+            npm run build --configuration=production
+            BUILD_EXIT=$?
+            echo "=========================================="
+            echo "✅ Build exit code: $BUILD_EXIT"
+            if [ $BUILD_EXIT -ne 0 ]; then
+              echo "❌ ERROR: Build failed!"
+              exit 1
+            fi
+            echo "Checking build output:"
+            if [ -d "dist" ]; then
+              echo "✅ dist directory created"
+              echo "Build size: $(du -sh dist)"
+              echo "Files in dist: $(find dist -type f | wc -l)"
+            else
+              echo "❌ dist directory not found!"
+              exit 1
+            fi
+            echo "=========================================="
+      
+      # Store test results
+      - store_test_results:
+          path: web-app/coverage
+      
+      # Store test coverage artifacts
+      - store_artifacts:
+          path: web-app/coverage
+          destination: coverage
+      
+      # Store build artifacts
+      - store_artifacts:
+          path: web-app/dist
+          destination: dist
+      
+      # Persist build artifacts for deployment
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - web-app/dist
 
-# ================================================            echo "=========================================="
-
-# WORKFLOWS - Orchestrate job execution      
-
-# ================================================      # Build application
-
-workflows:      - run:
-
-  version: 2          name: Build Application
-
-  test-and-build:          command: |
-
-    jobs:            echo "=========================================="
-
-      # Only test-angular-app is active            echo "🏗️ Building web-api..."
-
-      - test-angular-app            echo "=========================================="
-
-                  cd web-api
-
-      # Uncomment below when ready to add other jobs            npm run build
-
-      # - udacity-web-app            BUILD_EXIT=$?
-
-      # - udacity-web-api            echo "=========================================="
-
-      # - hold-for-approval:            echo "✅ Build exit code: $BUILD_EXIT"
-
-      #     type: approval            if [ $BUILD_EXIT -ne 0 ]; then
-
-      #     requires:              echo "❌ ERROR: Build failed!"
-
-      #       - udacity-web-app              exit 1
-
-      #       - udacity-web-api            fi
-
-      # - deploy-frontend:            echo "Checking build output:"
-
-      #     requires:            if [ -d "dist" ]; then
-
-      #       - hold-for-approval              echo "✅ dist directory created"
-
-      # - deploy-backend:              echo "Build size: $(du -sh dist)"
-
-      #     requires:              echo "Files in dist: $(find dist -type f | wc -l)"
-
-      #       - hold-for-approval            else
-
+  udacity-web-api:
+    executor: node-browsers
+    steps:
+      - checkout
+      
+      # Restore cached dependencies
+      - restore_cache:
+          name: Restore npm dependencies cache
+          keys:
+            - v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}
+            - v1-web-api-deps-
+      
+      # Install dependencies
+      - run:
+          name: Install Dependencies
+          command: |
+            echo "=========================================="
+            echo "📦 Installing web-api dependencies..."
+            echo "=========================================="
+            cd web-api
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "Current directory: $(pwd)"
+            echo "=========================================="
+            echo "Package.json exists: $([ -f package.json ] && echo 'YES' || echo 'NO')"
+            echo "Package-lock.json exists: $([ -f package-lock.json ] && echo 'YES' || echo 'NO')"
+            echo "=========================================="
+            echo "Running npm ci..."
+            npm ci
+            NPM_EXIT=$?
+            echo "=========================================="
+            echo "✅ npm ci exit code: $NPM_EXIT"
+            if [ $NPM_EXIT -ne 0 ]; then
+              echo "❌ ERROR: npm ci failed!"
+              exit 1
+            fi
+            echo "Total packages installed: $(ls node_modules 2>/dev/null | wc -l)"
+            echo "=========================================="
+      
+      # Save dependencies to cache
+      - save_cache:
+          name: Save npm dependencies cache
+          key: v1-web-api-deps-{{ checksum "web-api/package-lock.json" }}
+          paths:
+            - web-api/node_modules
+      
+      # Verify installation
+      - run:
+          name: Verify Installation
+          command: |
+            echo "=========================================="
+            echo "🔍 Verifying web-api installation..."
+            echo "=========================================="
+            cd web-api
+            echo "Checking installed packages (depth=0):"
+            npm list --depth=0 || echo "⚠️ Some peer dependency warnings (expected)"
+            echo "=========================================="
+      
+      # Run unit tests
+      - run:
+          name: Run Unit Tests
+          command: |
+            echo "=========================================="
+            echo "🧪 Running web-api unit tests..."
+            echo "=========================================="
+            cd web-api
+            npm test
+            TEST_EXIT=$?
+            echo "=========================================="
+            echo "✅ Test exit code: $TEST_EXIT"
+            if [ $TEST_EXIT -ne 0 ]; then
+              echo "❌ ERROR: Tests failed!"
+              exit 1
+            fi
+            echo "All tests passed successfully!"
+            echo "=========================================="
+      
+      # Build application
+      - run:
+          name: Build Application
+          command: |
+            echo "=========================================="
+            echo "🏗️ Building web-api..."
+            echo "=========================================="
+            cd web-api
+            npm run build
+            BUILD_EXIT=$?
+            echo "=========================================="
+            echo "✅ Build exit code: $BUILD_EXIT"
+            if [ $BUILD_EXIT -ne 0 ]; then
+              echo "❌ ERROR: Build failed!"
+              exit 1
+            fi
+            echo "Checking build output:"
+            if [ -d "dist" ]; then
+              echo "✅ dist directory created"
+              echo "Build size: $(du -sh dist)"
+              echo "Files in dist: $(find dist -type f | wc -l)"
+            else
               echo "❌ dist directory not found!"
               exit 1
             fi
