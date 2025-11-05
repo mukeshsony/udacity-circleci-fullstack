@@ -3,12 +3,8 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: cimg/node:20.17
+      - image: circleci/node:20   # Node.js environment
     working_directory: ~/repo
-
-orbs:
-  aws-cli: circleci/aws-cli@4.0.0
-  eb: circleci/aws-elastic-beanstalk@2.0.1
 
 jobs:
   # -------------------------
@@ -18,21 +14,25 @@ jobs:
     executor: node-executor
     steps:
       - checkout
+
+      # Cache frontend dependencies
       - restore_cache:
           keys:
-            - v2-frontend-node-{{ checksum "web-app/package-lock.json" }}
-            - v2-frontend-node-
+            - v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
       - run:
-          name: Check Cache Status
+          name: Install Angular CLI
           command: |
-            echo "Checking if cache was restored..."
-            if [ -d "web-app/node_modules" ]; then
-              echo "⚠️  Cache restored - node_modules exists"
-              echo "Removing old node_modules to force fresh install..."
-              rm -rf web-app/node_modules
-            else
-              echo "✅ No cache - will do fresh install"
-            fi
+            echo "=========================================="
+            echo "🔧 Installing Angular CLI globally..."
+            echo "=========================================="
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "Current directory: $(pwd)"
+            npm install -g @angular/cli
+            echo "Verifying Angular CLI installation:"
+            which ng
+            ng version
+            echo "✅ Angular CLI installed globally"
       - run:
           name: Install Frontend Dependencies
           command: |
@@ -41,52 +41,74 @@ jobs:
             echo "=========================================="
             cd web-app
             echo "Current directory: $(pwd)"
-            npm ci
+            echo "Checking package files:"
+            ls -lh package.json package-lock.json
+            echo ""
+            echo "Starting npm ci..."
+            npm ci --loglevel=info
+            echo ""
             echo "✅ Dependencies installed"
-            echo "Verifying node_modules:"
-            ls -l node_modules | head -20
-            echo "Checking node_modules/.bin:"
-            ls -l node_modules/.bin | head -20 || echo ".bin folder does not exist"
+            echo "Verifying installation:"
+            echo "  - node_modules directory:"
+            ls -ld node_modules
+            echo "  - Package count: $(ls node_modules | wc -l)"
+            echo "  - node_modules/.bin directory:"
+            ls -l node_modules/.bin | head -10 || echo ".bin folder does not exist"
+            echo "  - Angular CLI in node_modules:"
+            ls -lh node_modules/.bin/ng 2>/dev/null || echo "ng binary not found in node_modules"
       - save_cache:
           paths:
             - web-app/node_modules
-          key: v2-frontend-node-{{ checksum "web-app/package-lock.json" }}
-      - run:
-          name: Install Puppeteer Chromium
-          command: |
-            echo "=========================================="
-            echo "🌐 Installing Chromium for Puppeteer..."
-            echo "=========================================="
-            cd web-app
-            echo "Current directory: $(pwd)"
-            npx puppeteer browsers install chrome
-            echo "✅ Chromium installed successfully"
-            echo "Chromium location:"
-            ls -la ~/.cache/puppeteer/ || echo "Cache directory structure"
+          key: v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
+
+      # Run frontend tests using global ng
       - run:
           name: Run Frontend Unit Tests
           command: |
+            echo "=========================================="
             echo "🧪 Running frontend unit tests..."
+            echo "=========================================="
             cd web-app
-            ./node_modules/.bin/ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage
-            echo "✅ Tests completed"
+            echo "Current directory: $(pwd)"
+            echo "Using Angular CLI from: $(which ng)"
+            echo "Angular CLI version:"
+            ng version
+            echo ""
+            echo "Starting tests with ChromeHeadless..."
+            ng test --watch=false --browsers=ChromeHeadless --code-coverage
+            echo ""
+            echo "✅ Tests completed successfully"
+            if [ -d coverage ]; then
+              echo "Coverage report generated:"
+              ls -lh coverage/
+            fi
+
+      # Build frontend using global ng
       - run:
           name: Build Frontend
           command: |
-            echo "🏗️  Building frontend..."
+            echo "=========================================="
+            echo "🏗 Building frontend..."
+            echo "=========================================="
             cd web-app
-            ./node_modules/.bin/ng build
-            echo "✅ Build completed"
-      - persist_to_workspace:
-          root: ~/repo
-          paths:
-            - web-app/dist
-            - web-app/node_modules
-            - web-app/package.json
+            echo "Current directory: $(pwd)"
+            echo "Starting production build..."
+            ng build --configuration=production
+            echo ""
+            echo "✅ Build completed successfully"
+            echo "Build output:"
+            ls -lh dist/
+            echo ""
+            echo "Build size:"
+            du -sh dist/
+            echo "Build files:"
+            find dist/ -type f | head -20
+
+      # Cache frontend build artifacts for deploy
       - save_cache:
           paths:
             - web-app/dist
-          key: v1-frontend-build-{{ checksum "web-app/dist" }}
+          key: v1-frontend-build-{{ checksum "web-app/package-lock.json" }}
 
   # -------------------------
   # Backend Build & Test
@@ -95,97 +117,152 @@ jobs:
     executor: node-executor
     steps:
       - checkout
+
+      # Cache backend dependencies
       - restore_cache:
           keys:
-            - v2-backend-node-{{ checksum "web-api/package-lock.json" }}
-            - v2-backend-node-
+            - v1-backend-node-{{ checksum "web-api/package-lock.json" }}
       - run:
           name: Install Backend Dependencies
           command: |
+            echo "=========================================="
             echo "📦 Installing backend dependencies..."
+            echo "=========================================="
             cd web-api
-            npm ci
+            echo "Current directory: $(pwd)"
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "Checking package files:"
+            ls -lh package.json package-lock.json
+            echo ""
+            echo "Starting npm ci..."
+            npm ci --loglevel=info
+            echo ""
             echo "✅ Dependencies installed"
+            echo "Verifying installation:"
+            echo "  - node_modules directory:"
+            ls -ld node_modules
+            echo "  - Package count: $(ls node_modules | wc -l)"
+            echo "  - node_modules/.bin directory:"
+            ls -l node_modules/.bin | head -10 || echo ".bin folder does not exist"
       - save_cache:
           paths:
             - web-api/node_modules
-          key: v2-backend-node-{{ checksum "web-api/package-lock.json" }}
+          key: v1-backend-node-{{ checksum "web-api/package-lock.json" }
+
+      # Run backend tests
       - run:
           name: Run Backend Unit Tests
           command: |
+            echo "=========================================="
             echo "🧪 Running backend unit tests..."
+            echo "=========================================="
             cd web-api
+            echo "Current directory: $(pwd)"
+            echo "Test configuration:"
+            cat tests/support/jasmine.json 2>/dev/null || echo "jasmine.json not found"
+            echo ""
+            echo "Starting tests..."
             npm test
-            echo "✅ Tests completed"
+            echo ""
+            echo "✅ Tests completed successfully"
+
+      # Build backend (TypeScript optional)
       - run:
           name: Build Backend
           command: |
-            echo "🏗️  Building backend..."
+            echo "=========================================="
+            echo "🏗 Building backend..."
+            echo "=========================================="
             cd web-api
+            echo "Current directory: $(pwd)"
+            echo "TypeScript version:"
+            npx tsc --version || echo "TypeScript not found"
+            echo ""
+            echo "Starting build..."
             npm run build
-            echo "✅ Build completed"
-      - persist_to_workspace:
-          root: ~/repo
-          paths:
-            - web-api/dist
-            - web-api/node_modules
-            - web-api/package.json
+            echo ""
+            echo "✅ Build completed successfully"
+            if [ -d dist ]; then
+              echo "Build output:"
+              ls -lh dist/
+              echo "Build size:"
+              du -sh dist/
+            fi
+
+      # Cache backend build artifacts
       - save_cache:
           paths:
             - web-api/dist
-          key: v1-backend-build-{{ checksum "web-api/dist" }}
+          key: v1-backend-build-{{ checksum "web-api/package-lock.json" }}
 
   # -------------------------
-  # Deploy Frontend
+  # Frontend Deploy
   # -------------------------
   deploy-frontend:
     executor: node-executor
     steps:
       - checkout
-      - aws-cli/setup
       - attach_workspace:
           at: ~/repo
-      - restore_cache:
-          keys:
-            - v1-frontend-build-{{ checksum "web-app/dist" }}
       - run:
-          name: Check if Frontend Needs Deploy
+          name: Deploy Frontend
           command: |
-            if [ -d "web-app/dist" ] && [ "$(ls -A web-app/dist)" ]; then
-              echo "Frontend build exists. Deploying..."
-              cd web-app/dist
-              aws s3 sync . s3://${AWS_S3_BUCKET} --delete
-              echo "Invalidating CloudFront cache..."
-              aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+            echo "=========================================="
+            echo "🚀 Deploying frontend..."
+            echo "=========================================="
+            echo "Current directory: $(pwd)"
+            echo "Checking dist folder:"
+            ls -lh web-app/dist/ || echo "dist folder not found"
+            cd web-app/dist
+            echo ""
+            # Skip deploy if nothing changed
+            if [ -f .cache_deploy_done ]; then
+              echo "⚠️  Frontend deploy cache exists, skipping deploy"
             else
-              echo "No frontend changes detected. Skipping deploy."
+              echo "Deploying to S3 bucket: ${AWS_S3_BUCKET}"
+              aws s3 sync . s3://${AWS_S3_BUCKET} --delete
+              echo ""
+              echo "Creating CloudFront invalidation..."
+              aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+              touch .cache_deploy_done
+              echo ""
+              echo "✅ Frontend deployed successfully"
             fi
 
   # -------------------------
-  # Deploy Backend
+  # Backend Deploy
   # -------------------------
   deploy-backend:
     executor: node-executor
     steps:
       - checkout
-      - aws-cli/setup
-      - eb/setup
       - attach_workspace:
           at: ~/repo
-      - restore_cache:
-          keys:
-            - v1-backend-build-{{ checksum "web-api/dist" }}
       - run:
-          name: Check if Backend Needs Deploy
+          name: Deploy Backend
           command: |
-            if [ -d "web-api/dist" ] && [ "$(ls -A web-api/dist)" ]; then
-              echo "Backend build exists. Preparing deployment package..."
-              cd web-api
-              zip -r deploy.zip dist node_modules package.json .ebextensions
-              echo "Deploying backend to Elastic Beanstalk..."
-              eb deploy ${EB_ENVIRONMENT_NAME}
+            echo "=========================================="
+            echo "🚀 Deploying backend..."
+            echo "=========================================="
+            cd web-api
+            echo "Current directory: $(pwd)"
+            echo "Checking deployment files:"
+            ls -lh dist/ package.json 2>/dev/null || echo "Required files not found"
+            echo ""
+            # Skip deploy if nothing changed
+            if [ -f .cache_deploy_done ]; then
+              echo "⚠️  Backend deploy cache exists, skipping deploy"
             else
-              echo "No backend changes detected. Skipping deploy."
+              echo "Creating deployment package..."
+              zip -r deploy.zip dist node_modules package.json .ebextensions
+              echo "Package size: $(du -sh deploy.zip)"
+              echo ""
+              echo "Deploying to Elastic Beanstalk: ${EB_ENVIRONMENT_NAME}"
+              eb deploy ${EB_ENVIRONMENT_NAME}
+              touch .cache_deploy_done
+              echo ""
+              echo "✅ Backend deployed successfully"
             fi
 
 # -------------------------
@@ -195,56 +272,13 @@ workflows:
   version: 2
   build-test-deploy:
     jobs:
-      # Parallel build & test
-      - frontend-job:
-          filters:
-            branches:
-              only:
-                - main
-                - develop
+      - frontend-job
       - backend-job:
-          filters:
-            branches:
-              only:
-                - main
-                - develop
-
-      # Manual approval for production
-      - hold-for-approval:
-          type: approval
           requires:
             - frontend-job
-            - backend-job
-          filters:
-            branches:
-              only: main
-
-      # Sequential deploys for production
       - deploy-frontend:
           requires:
-            - hold-for-approval
-          filters:
-            branches:
-              only: main
+            - backend-job
       - deploy-backend:
           requires:
             - deploy-frontend
-          filters:
-            branches:
-              only: main
-
-      # Sequential deploys for staging (develop branch)
-      - deploy-frontend:
-          name: deploy-frontend-staging
-          requires:
-            - frontend-job
-          filters:
-            branches:
-              only: develop
-      - deploy-backend:
-          name: deploy-backend-staging
-          requires:
-            - deploy-frontend-staging
-          filters:
-            branches:
-              only: develop
