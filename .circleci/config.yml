@@ -31,7 +31,7 @@ jobs:
             cd web-app
             echo "Node version: $(node -v)"
             echo "NPM version: $(npm -v)"
-            npm ci
+            npm install
             echo "✅ Dependencies installed."
 
       - save_cache:
@@ -51,8 +51,9 @@ jobs:
             echo "📂 Listing web-app folder contents:"
             ls -la web-app
             echo "=========================================="
-            # cd web-app
-            npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
+            cd web-app
+            ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
+            #npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
 
       - run:
           name: 🏗️ Build Frontend
