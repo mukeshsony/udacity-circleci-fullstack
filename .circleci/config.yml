@@ -3,7 +3,7 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: circleci/node:20-browsers   # Node + Chrome for Angular tests
+      - image: cimg/node:20.17-browsers   # Next-gen image with Node + Chrome for Angular tests
     working_directory: ~/repo
 
 jobs:
