@@ -23,6 +23,8 @@ jobs:
       - run:
           name: 📦 Install Frontend Dependencies
           command: |
+            echo "📂 Listing root directory contents:"
+            ls -la
             echo "=========================================="
             echo "📦 Installing frontend dependencies..."
             echo "=========================================="
