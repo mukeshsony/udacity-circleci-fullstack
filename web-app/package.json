@@ -4,10 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "npx ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:ci": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage"
+    "test:ci": "npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage"
   },
   "private": true,
   "dependencies": {

@@ -24,8 +24,17 @@ jobs:
       - run:
           name: Install Frontend Dependencies
           command: |
-            echo "Installing frontend dependencies..."
-            cd web-app && npm ci
+            echo "=========================================="
+            echo "📦 Installing frontend dependencies..."
+            echo "=========================================="
+            cd web-app
+            echo "Current directory: $(pwd)"
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            npm ci
+            echo "✅ Dependencies installed successfully"
+            echo "Checking Angular CLI installation..."
+            npx ng version || echo "Angular CLI found in node_modules"
       - save_cache:
           paths:
             - web-app/node_modules
@@ -33,18 +42,40 @@ jobs:
       - run:
           name: Install Puppeteer Chromium
           command: |
-            echo "Installing Chromium for Puppeteer..."
-            cd web-app && npx puppeteer browsers install chrome
+            echo "=========================================="
+            echo "🌐 Installing Chromium for Puppeteer..."
+            echo "=========================================="
+            cd web-app
+            echo "Current directory: $(pwd)"
+            npx puppeteer browsers install chrome
+            echo "✅ Chromium installed successfully"
+            echo "Chromium location:"
+            ls -la ~/.cache/puppeteer/ || echo "Cache directory structure"
       - run:
           name: Run Frontend Unit Tests
           command: |
-            echo "Running frontend unit tests..."
-            cd web-app && npm run test:ci
+            echo "=========================================="
+            echo "🧪 Running frontend unit tests..."
+            echo "=========================================="
+            cd web-app
+            echo "Current directory: $(pwd)"
+            echo "Checking node_modules/.bin:"
+            ls -la node_modules/.bin/ng || echo "ng binary not found"
+            echo "Running tests with npm script..."
+            npm run test:ci
+            echo "✅ Tests completed successfully"
       - run:
           name: Build Frontend
           command: |
-            echo "Building frontend..."
-            cd web-app && npm run build
+            echo "=========================================="
+            echo "🏗️  Building frontend..."
+            echo "=========================================="
+            cd web-app
+            echo "Current directory: $(pwd)"
+            npm run build
+            echo "✅ Build completed successfully"
+            echo "Build output:"
+            ls -la dist/ || echo "Dist directory not found"
       - persist_to_workspace:
           root: ~/repo
           paths:
@@ -69,8 +100,17 @@ jobs:
       - run:
           name: Install Backend Dependencies
           command: |
-            echo "Installing backend dependencies..."
-            cd web-api && npm ci
+            echo "=========================================="
+            echo "📦 Installing backend dependencies..."
+            echo "=========================================="
+            cd web-api
+            echo "Current directory: $(pwd)"
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            npm ci
+            echo "✅ Dependencies installed successfully"
+            echo "Installed packages count:"
+            ls node_modules | wc -l
       - save_cache:
           paths:
             - web-api/node_modules
@@ -78,13 +118,26 @@ jobs:
       - run:
           name: Run Backend Unit Tests
           command: |
-            echo "Running backend unit tests..."
-            cd web-api && npm test
+            echo "=========================================="
+            echo "🧪 Running backend unit tests..."
+            echo "=========================================="
+            cd web-api
+            echo "Current directory: $(pwd)"
+            echo "Running tests..."
+            npm test
+            echo "✅ Tests completed successfully"
       - run:
           name: Build Backend
           command: |
-            echo "Building backend..."
-            cd web-api && npm run build
+            echo "=========================================="
+            echo "🏗️  Building backend..."
+            echo "=========================================="
+            cd web-api
+            echo "Current directory: $(pwd)"
+            npm run build
+            echo "✅ Build completed successfully"
+            echo "Build output:"
+            ls -la dist/ || echo "Dist directory not found"
       - persist_to_workspace:
           root: ~/repo
           paths:
