@@ -20,7 +20,19 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
+            - v2-frontend-node-{{ checksum "web-app/package-lock.json" }}
+            - v2-frontend-node-
+      - run:
+          name: Check Cache Status
+          command: |
+            echo "Checking if cache was restored..."
+            if [ -d "web-app/node_modules" ]; then
+              echo "⚠️  Cache restored - node_modules exists"
+              echo "Removing old node_modules to force fresh install..."
+              rm -rf web-app/node_modules
+            else
+              echo "✅ No cache - will do fresh install"
+            fi
       - run:
           name: Install Frontend Dependencies
           command: |
@@ -52,7 +64,7 @@ jobs:
       - save_cache:
           paths:
             - web-app/node_modules
-          key: v1-frontend-node-{{ checksum "web-app/package-lock.json" }}
+          key: v2-frontend-node-{{ checksum "web-app/package-lock.json" }}
       - run:
           name: Install Puppeteer Chromium
           command: |
@@ -113,7 +125,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-backend-node-{{ checksum "web-api/package-lock.json" }}
+            - v2-backend-node-{{ checksum "web-api/package-lock.json" }}
+            - v2-backend-node-
       - run:
           name: Install Backend Dependencies
           command: |
@@ -131,7 +144,7 @@ jobs:
       - save_cache:
           paths:
             - web-api/node_modules
-          key: v1-backend-node-{{ checksum "web-api/package-lock.json" }}
+          key: v2-backend-node-{{ checksum "web-api/package-lock.json" }}
       - run:
           name: Run Backend Unit Tests
           command: |
