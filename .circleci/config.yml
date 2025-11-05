@@ -3,7 +3,7 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: circleci/node:20
+      - image: cimg/node:20.17
     working_directory: ~/repo
 
 orbs:
