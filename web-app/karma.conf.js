@@ -1,3 +1,8 @@
+const puppeteer = require('puppeteer');
+
+// Use Puppeteer's Chromium in CI
+process.env.CHROME_BIN = puppeteer.executablePath();
+
 module.exports = function (config) {
   config.set({
     basePath: '',
@@ -24,19 +29,17 @@ module.exports = function (config) {
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
-    autoWatch: true,
-    browsers: ['Chrome'],
-    singleRun: false,
-    restartOnFileChange: true,
-
-    // Custom launcher for CI environment
+    autoWatch: false,
+    browsers: ['ChromeHeadlessCI'],
+    singleRun: true,
+    restartOnFileChange: false,
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: [
-          '--no-sandbox',              // Required for Docker/CI
-          '--disable-gpu',             // Disable GPU hardware acceleration
-          '--disable-dev-shm-usage',   // Overcome limited resource problems
+          '--no-sandbox',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
           '--disable-software-rasterizer',
           '--disable-extensions'
         ]

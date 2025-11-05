@@ -11,19 +11,25 @@ jobs:
     executor: node-angular
     steps:
       - checkout
-
+      
+      # Cache node_modules for faster builds
       - restore_cache:
           keys:
             - v2-deps-{{ checksum "web-app/package-lock.json" }}
             - v2-deps-
 
       - run:
-          name: Install Dependencies
+          name: 📦 Install Dependencies
           command: |
             cd web-app
-            echo "Node: $(node --version) | NPM: $(npm --version)"
-            npm install
-            echo "Packages installed: $(ls node_modules | wc -l)"
+            echo "=========================================="
+            echo "Installing dependencies..."
+            echo "Node: $(node -v) | NPM: $(npm -v)"
+            npm ci --include=dev
+            echo "✅ Dependencies installed"
+            echo "Checking for Angular CLI binary:"
+            ls -l node_modules/.bin/ng || echo "⚠️ ng binary not found!"
+            npx ng version
 
       - save_cache:
           paths:
@@ -31,16 +37,24 @@ jobs:
           key: v2-deps-{{ checksum "web-app/package-lock.json" }}
 
       - run:
-          name: Run Unit Tests
+          name: 🧪 Run Angular Unit Tests
           command: |
             cd web-app
-            npm run test:ci
+            echo "=========================================="
+            echo "Running unit tests with ChromeHeadlessCI..."
+            npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
+            echo "✅ Tests finished successfully"
+            ls -lh coverage/ || echo "⚠️ No coverage folder found"
 
       - run:
-          name: Build Production
+          name: 🏗 Build Angular Production App
           command: |
             cd web-app
-            npm run build
+            echo "=========================================="
+            echo "Building production app..."
+            npx ng build --configuration production
+            echo "✅ Build completed successfully"
+            ls -lh dist/ || echo "⚠️ dist folder missing"
 
       - store_test_results:
           path: web-app/coverage
