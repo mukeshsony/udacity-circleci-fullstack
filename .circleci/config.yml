@@ -48,6 +48,9 @@ jobs:
             echo "📂 Listing checkout directory contents:"
             ls -la
             echo "=========================================="
+            echo "📂 Listing web-app folder contents:"
+            ls -la web-app
+            echo "=========================================="
             # cd web-app
             npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage
 
