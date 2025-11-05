@@ -411,10 +411,20 @@ jobs:
             fi
             echo "=========================================="
             echo "Initializing EB (if needed)..."
-            eb init ${EB_APP_NAME} --platform node.js --region ${AWS_DEFAULT_REGION} || echo "EB already initialized"
+            if [ ! -d ".elasticbeanstalk" ]; then
+              echo "Creating .elasticbeanstalk directory..."
+              mkdir -p .elasticbeanstalk
+              echo "Initializing EB application..."
+              eb init ${EB_APP_NAME} --platform node.js --region ${AWS_DEFAULT_REGION}
+            else
+              echo "EB already initialized"
+            fi
+            echo "=========================================="
+            echo "Setting default environment: ${EB_ENV_NAME}"
+            eb use ${EB_ENV_NAME}
             echo "=========================================="
             echo "Deploying to environment: ${EB_ENV_NAME}"
-            eb deploy ${EB_ENV_NAME}
+            eb deploy ${EB_ENV_NAME} --verbose
             DEPLOY_EXIT=$?
             echo "=========================================="
             echo "✅ EB deploy exit code: $DEPLOY_EXIT"
