@@ -561,6 +561,71 @@ jobs:
           at: ~/project
       
       - run:
+          name: Run Database Migrations
+          command: |
+            echo "=========================================="
+            echo "🗄️ Running Database Migrations..."
+            echo "=========================================="
+            
+            # Install Node.js and dependencies
+            echo "📦 Installing Node.js..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            
+            cd web-api
+            echo "📂 Current directory: $(pwd)"
+            
+            # Install only production dependencies for migration script
+            echo "📦 Installing dependencies..."
+            npm ci --production
+            
+            # Check if migration script exists
+            if [ ! -f "scripts/run_migrations.js" ]; then
+              echo "❌ ERROR: Migration script not found!"
+              exit 1
+            fi
+            
+            echo "🔍 Checking required environment variables..."
+            if [ -z "${POSTGRES_HOST}" ] || [ -z "${POSTGRES_DB}" ] || [ -z "${POSTGRES_USERNAME}" ] || [ -z "${POSTGRES_PASSWORD}" ]; then
+              echo "❌ ERROR: Database environment variables are not set!"
+              echo "Required: POSTGRES_HOST, POSTGRES_DB, POSTGRES_USERNAME, POSTGRES_PASSWORD"
+              exit 1
+            else
+              echo "✅ Database environment variables are set"
+              echo "Host: ${POSTGRES_HOST}"
+              echo "Database: ${POSTGRES_DB}"
+              echo "User: ${POSTGRES_USERNAME}"
+            fi
+            
+            # Set environment variables for migration script
+            export DATABASE_HOST=${POSTGRES_HOST}
+            export DATABASE_PORT=${POSTGRES_PORT:-5432}
+            export DATABASE_NAME=${POSTGRES_DB}
+            export DATABASE_USER=${POSTGRES_USERNAME}
+            export DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+            
+            echo "=========================================="
+            echo "🚀 Running migrations..."
+            echo "Note: Migrations use 'CREATE TABLE IF NOT EXISTS' and are idempotent"
+            echo "They can be run safely multiple times without issues"
+            echo "=========================================="
+            
+            npm run db:migrate
+            MIGRATE_EXIT=$?
+            
+            echo "=========================================="
+            if [ $MIGRATE_EXIT -eq 0 ]; then
+              echo "✅ Database migrations completed successfully!"
+            else
+              echo "❌ ERROR: Database migrations failed!"
+              echo "Exit code: $MIGRATE_EXIT"
+              exit 1
+            fi
+            echo "=========================================="
+      
+      - run:
           name: Install EB CLI
           command: |
             echo "=========================================="
