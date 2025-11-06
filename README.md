@@ -328,8 +328,9 @@ Set in EB Console → Configuration → Software → Environment properties:
 
 ## Documentation
 
-- [Architecture Diagram](docs/architecture_diagram.md) - Infrastructure diagram
-- [Pipeline Diagram](docs/pipeline_diagram.md) - CI/CD workflow diagram
+- **[📊 Project Diagrams](docs/diagrams.md)** - Infrastructure architecture and CI/CD pipeline diagrams
+- [Architecture Diagram](docs/architecture_diagram.md) - Infrastructure diagram (detailed ASCII)
+- [Pipeline Diagram](docs/pipeline_diagram.md) - CI/CD workflow diagram (detailed ASCII)
 - [Infrastructure Description](docs/Infrastructure_description.md) - AWS services overview
 - [Pipeline Description](docs/Pipeline_description.md) - CircleCI pipeline details
 - [Application Dependencies](docs/Application_dependencies.md) - All project dependencies
