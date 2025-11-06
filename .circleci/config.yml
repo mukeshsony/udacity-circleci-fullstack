@@ -497,18 +497,22 @@ jobs:
             cd web-app
             echo "📂 Current directory: $(pwd)"
             echo "📦 Checking dist directory:"
-            if [ -d "dist" ]; then
-              echo "✅ dist directory exists"
-              echo "Files to upload: $(find dist -type f | wc -l)"
-              echo "Total size: $(du -sh dist)"
+            if [ -d "dist/mystore-angular/browser" ]; then
+              echo "✅ dist/mystore-angular/browser directory exists"
+              echo "Files to upload: $(find dist/mystore-angular/browser -type f | wc -l)"
+              echo "Total size: $(du -sh dist/mystore-angular/browser)"
+              echo "Contents:"
+              ls -lah dist/mystore-angular/browser/
             else
-              echo "❌ ERROR: dist directory not found!"
+              echo "❌ ERROR: dist/mystore-angular/browser directory not found!"
+              echo "Available directories:"
+              find dist -type d
               exit 1
             fi
             echo "=========================================="
             echo "🚀 Starting S3 sync..."
-            echo "Command: aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ --delete --cache-control max-age=86400"
-            aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ \
+            echo "Command: aws s3 sync dist/mystore-angular/browser/ s3://${AWS_S3_BUCKET}/ --delete --cache-control max-age=86400"
+            aws s3 sync dist/mystore-angular/browser/ s3://${AWS_S3_BUCKET}/ \
               --delete \
               --cache-control "max-age=86400"
             SYNC_EXIT=$?
