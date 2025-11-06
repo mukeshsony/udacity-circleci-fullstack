@@ -554,7 +554,29 @@ jobs:
               exit 1
             fi
             echo "=========================================="
-            echo "🚀 Deploying to environment: ${EB_ENV_NAME}"
+            echo "� Setting environment variables in EB..."
+            echo "Setting POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD"
+            echo "Setting JWT_SECRET, BCRYPT_PASSWORD, SALT_ROUNDS, PORT"
+            eb setenv \
+              POSTGRES_HOST="${POSTGRES_HOST}" \
+              POSTGRES_PORT="${POSTGRES_PORT}" \
+              POSTGRES_DB="${POSTGRES_DB}" \
+              POSTGRES_USER="${POSTGRES_USER}" \
+              POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+              JWT_SECRET="${JWT_SECRET}" \
+              BCRYPT_PASSWORD="${BCRYPT_PASSWORD}" \
+              SALT_ROUNDS="${SALT_ROUNDS}" \
+              PORT=8080
+            SETENV_EXIT=$?
+            echo "=========================================="
+            echo "✅ EB setenv exit code: $SETENV_EXIT"
+            if [ $SETENV_EXIT -ne 0 ]; then
+              echo "❌ ERROR: Setting environment variables failed!"
+              exit 1
+            fi
+            echo "✅ Environment variables set successfully!"
+            echo "=========================================="
+            echo "�🚀 Deploying to environment: ${EB_ENV_NAME}"
             echo "Command: eb deploy \"${EB_ENV_NAME}\" --verbose"
             eb deploy "${EB_ENV_NAME}" --verbose
             DEPLOY_EXIT=$?
