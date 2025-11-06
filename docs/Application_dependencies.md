@@ -1,104 +1,343 @@
 # Application Dependencies
 
-This document provides a comprehensive list of all dependencies required for the full-stack application, including frontend (Angular), backend (Node.js), and infrastructure components.
+This document lists all the essential dependencies and software required to build, run, and deploy the MyStore application.
 
 ---
 
-## Frontend Dependencies (Angular)
+## What Does This Application Depend On?
 
-### Production Dependencies
+### Core Runtime Dependencies
 
-Located in `frontend/package.json`
+These are the "bigger" essential elements that the application cannot run without:
 
-#### Core Framework
+#### 1. **Node.js** (v20.19.5 or higher)
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@angular/animations` | ^17.0.0 | Animation framework for Angular |
-| `@angular/common` | ^17.0.0 | Common Angular services and directives |
-| `@angular/compiler` | ^17.0.0 | Angular template compiler |
-| `@angular/core` | ^17.0.0 | Core Angular framework |
-| `@angular/forms` | ^17.0.0 | Form handling and validation |
-| `@angular/platform-browser` | ^17.0.0 | Browser-specific functionality |
-| `@angular/platform-browser-dynamic` | ^17.0.0 | Dynamic compilation support |
-| `@angular/router` | ^17.0.0 | Client-side routing |
+**Purpose**: JavaScript runtime environment for both development and production
 
-#### UI Components & Styling
+**Why We Need It**:
+- Runs the backend Express.js server
+- Executes build scripts for frontend and backend
+- Required to install all other dependencies via npm
+- Provides the V8 JavaScript engine
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@angular/material` | ^17.0.0 | Material Design components |
-| `@angular/cdk` | ^17.0.0 | Component Dev Kit for custom components |
-| `bootstrap` | ^5.3.0 | CSS framework (if used) |
-| `@fortawesome/angular-fontawesome` | ^0.14.0 | Font Awesome icons |
-| `@fortawesome/fontawesome-svg-core` | ^6.5.0 | Font Awesome core |
-| `@fortawesome/free-solid-svg-icons` | ^6.5.0 | Font Awesome solid icons |
+**Where It's Used**:
+- Backend API server runtime
+- Frontend build process (Angular CLI)
+- CircleCI build environment
+- Elastic Beanstalk production environment
 
-#### HTTP & State Management
+---
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@angular/common/http` | ^17.0.0 | HTTP client for API calls |
-| `rxjs` | ^7.8.0 | Reactive extensions for async operations |
-| `@ngrx/store` | ^17.0.0 | State management (if used) |
-| `@ngrx/effects` | ^17.0.0 | Side effects for NgRx (if used) |
+#### 2. **npm (Node Package Manager)** (v10.0.0 or higher)
 
-#### Authentication & Security
+**Purpose**: Package manager for installing and managing dependencies
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@auth0/angular-jwt` | ^5.2.0 | JWT authentication helper |
-| `angular-oauth2-oidc` | ^15.0.0 | OAuth2/OIDC authentication (if used) |
+**Why We Need It**:
+- Installs all frontend and backend dependencies
+- Manages package versions and dependencies
+- Runs build, test, and deploy scripts
+- Cannot install any other dependencies without it
 
-#### Utilities
+**What It Installs**:
+- 1000+ packages for frontend (Angular, testing tools, etc.)
+- 100+ packages for backend (Express, database drivers, etc.)
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `tslib` | ^2.6.0 | TypeScript runtime library |
-| `zone.js` | ^0.14.0 | Zone support for Angular change detection |
-| `lodash` | ^4.17.21 | Utility functions |
-| `moment` | ^2.29.4 | Date/time manipulation |
-| `uuid` | ^9.0.0 | UUID generation |
+---
 
-### Development Dependencies
+#### 3. **PostgreSQL** (Database Software v16.3 or higher)
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@angular-devkit/build-angular` | ^17.0.0 | Angular build tools |
-| `@angular/cli` | ^17.0.0 | Angular command-line interface |
-| `@angular/compiler-cli` | ^17.0.0 | Angular compiler for build |
-| `typescript` | ~5.2.0 | TypeScript compiler |
+**Purpose**: Relational database management system
 
-#### Testing
+**Why We Need It**:
+- Stores all application data persistently
+- Manages user accounts, products, orders
+- Provides ACID-compliant transactions
+- Handles complex relational queries
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@angular/testing` | ^17.0.0 | Angular testing utilities |
-| `karma` | ^6.4.0 | Test runner |
-| `karma-chrome-launcher` | ^3.2.0 | Chrome launcher for Karma |
-| `karma-coverage` | ^2.2.0 | Code coverage reporter |
-| `karma-jasmine` | ^5.1.0 | Jasmine adapter for Karma |
-| `karma-jasmine-html-reporter` | ^2.1.0 | HTML reporter for Karma |
-| `jasmine-core` | ^5.1.0 | Jasmine testing framework |
-| `@types/jasmine` | ^5.1.0 | TypeScript types for Jasmine |
+**Where It's Used**:
+- Development: Local PostgreSQL installation
+- Production: AWS RDS PostgreSQL instance
 
-#### Linting & Code Quality
+**Database Driver**:
+- `pg` npm package - PostgreSQL client for Node.js
+- `db-migrate` - Database migration tool
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `eslint` | ^8.53.0 | JavaScript/TypeScript linter |
-| `@typescript-eslint/parser` | ^6.10.0 | TypeScript parser for ESLint |
-| `@typescript-eslint/eslint-plugin` | ^6.10.0 | TypeScript rules for ESLint |
-| `@angular-eslint/builder` | ^17.0.0 | Angular-specific ESLint builder |
-| `@angular-eslint/eslint-plugin` | ^17.0.0 | Angular-specific ESLint rules |
-| `prettier` | ^3.0.0 | Code formatter |
+---
 
-#### Type Definitions
+#### 4. **TypeScript** (v5.4.2)
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@types/node` | ^20.9.0 | Node.js type definitions |
-| `@types/lodash` | ^4.14.200 | Lodash type definitions |
+**Purpose**: Programming language and compiler
+
+**Why We Need It**:
+- Backend code is written in TypeScript
+- Frontend (Angular) is written in TypeScript
+- Provides type safety and better tooling
+- Compiles to JavaScript for execution
+
+**What It Compiles**:
+- Backend: `src/**/*.ts` → `dist/src/**/*.js`
+- Frontend: Angular TypeScript → JavaScript bundles
+
+---
+
+### Frontend Framework Dependencies
+
+#### 5. **Angular** (v17.3.0)
+
+**Purpose**: Frontend framework for building the user interface
+
+**Why We Need It**:
+- Provides the entire frontend architecture
+- Manages component-based UI
+- Handles routing, forms, HTTP requests
+- Cannot build the frontend without it
+
+**Core Angular Packages** (all v17.3.0):
+- `@angular/core` - Core framework
+- `@angular/common` - Common services and directives
+- `@angular/router` - Client-side routing
+- `@angular/forms` - Form handling
+- `@angular/platform-browser` - Browser support
+
+**Angular CLI**:
+- `@angular/cli` - Command-line tools for building and serving
+
+---
+
+#### 6. **RxJS** (v7.8.1)
+
+**Purpose**: Reactive programming library
+
+**Why We Need It**:
+- Required by Angular for handling async operations
+- Manages HTTP requests and responses
+- Handles event streams
+- Cannot use Angular without it
+
+---
+
+### Backend Framework Dependencies
+
+#### 7. **Express.js** (v4.18.2)
+
+**Purpose**: Web application framework for Node.js
+
+**Why We Need It**:
+- Provides the web server framework
+- Handles HTTP routing and middleware
+- Manages API endpoints
+- Cannot build the backend API without it
+
+**Related Packages**:
+- `body-parser` - Parse request bodies
+- `cors` - Enable Cross-Origin Resource Sharing
+- `helmet` - Security middleware
+
+---
+
+#### 8. **bcrypt** (v5.1.1)
+
+**Purpose**: Password hashing library
+
+**Why We Need It**:
+- Securely hashes user passwords
+- Prevents storing plain-text passwords
+- Provides salt generation
+- Essential for authentication security
+
+---
+
+#### 9. **jsonwebtoken** (v9.0.2)
+
+**Purpose**: JWT token generation and verification
+
+**Why We Need It**:
+- Creates authentication tokens
+- Verifies user identity
+- Manages session security
+- Required for API authentication
+
+---
+
+### Testing Dependencies
+
+#### 10. **Jasmine** (v5.1.0)
+
+**Purpose**: Testing framework
+
+**Why We Need It**:
+- Provides test structure (describe, it, expect)
+- Runs unit tests for both frontend and backend
+- 102 total unit tests depend on it
+- Cannot run tests without it
+
+---
+
+#### 11. **Karma** (v6.4.3)
+
+**Purpose**: Test runner for browser-based tests
+
+**Why We Need It**:
+- Runs Angular tests in browser environment
+- Executes 81 frontend unit tests
+- Integrates with ChromeHeadless for CI
+- Required for Angular testing
+
+**Related Packages**:
+- `karma-jasmine` - Jasmine adapter for Karma
+- `karma-chrome-launcher` - Chrome browser launcher
+- `puppeteer` - Headless Chrome for CI environment
+
+---
+
+### Build Tools
+
+#### 12. **Webpack** (Bundled with Angular CLI)
+
+**Purpose**: Module bundler
+
+**Why We Need It**:
+- Bundles all frontend files into optimized packages
+- Minifies and optimizes code for production
+- Handles asset loading (images, fonts, CSS)
+- Automatically included with Angular CLI
+
+---
+
+### Database Migration Tools
+
+#### 13. **db-migrate** (v0.11.14)
+
+**Purpose**: Database schema migration tool
+
+**Why We Need It**:
+- Manages database schema changes
+- Runs SQL migration scripts
+- Tracks which migrations have been applied
+- Ensures database structure is correct
+
+**Migration Files**:
+- `001_create_users.sql`
+- `002_create_products.sql`
+- `003_create_orders.sql`
+- `004_create_order_products.sql`
+- `010_seed_sample_data.sql`
+
+---
+
+### Development Tools
+
+#### 14. **Git** (v2.40.0 or higher)
+
+**Purpose**: Version control system
+
+**Why We Need It**:
+- Tracks code changes
+- Enables collaboration
+- Triggers CI/CD pipeline via GitHub
+- Cannot deploy without it
+
+---
+
+#### 15. **AWS CLI** (v2.0 or higher)
+
+**Purpose**: Command-line interface for AWS services
+
+**Why We Need It**:
+- Deploys frontend to S3
+- Manages AWS resources
+- Used in CircleCI deployment pipeline
+- Cannot deploy to AWS without it
+
+---
+
+#### 16. **EB CLI (Elastic Beanstalk CLI)** (v3.20.0 or higher)
+
+**Purpose**: Command-line interface for Elastic Beanstalk
+
+**Why We Need It**:
+- Deploys backend to Elastic Beanstalk
+- Sets environment variables (`eb setenv`)
+- Manages EB environments
+- Cannot deploy backend without it
+
+---
+
+## Complete Dependency Summary
+
+### Essential Software (Cannot Run Without):
+1. ✅ **Node.js** - Runtime for everything
+2. ✅ **npm** - Install dependencies
+3. ✅ **PostgreSQL** - Database software
+4. ✅ **TypeScript** - Compile source code
+5. ✅ **Angular** - Frontend framework
+6. ✅ **Express.js** - Backend framework
+
+### Development Tools (Cannot Build/Deploy Without):
+7. ✅ **Angular CLI** - Build frontend
+8. ✅ **Jasmine & Karma** - Run tests
+9. ✅ **db-migrate** - Manage database
+10. ✅ **AWS CLI** - Deploy to S3
+11. ✅ **EB CLI** - Deploy to Elastic Beanstalk
+12. ✅ **Git** - Version control
+
+### Security & Authentication (Cannot Secure Without):
+13. ✅ **bcrypt** - Hash passwords
+14. ✅ **jsonwebtoken** - Authenticate users
+
+---
+
+## How Dependencies Are Managed
+
+### Frontend (web-app/package.json)
+```json
+{
+  "dependencies": {
+    "@angular/core": "^17.3.0",
+    "@angular/common": "^17.3.0",
+    "rxjs": "~7.8.0"
+  },
+  "devDependencies": {
+    "@angular/cli": "^17.3.0",
+    "karma": "~6.4.0",
+    "jasmine-core": "~5.1.0"
+  }
+}
+```
+
+### Backend (web-api/package.json)
+```json
+{
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.2",
+    "jasmine": "^5.1.0",
+    "db-migrate": "^0.11.14"
+  }
+}
+```
+
+---
+
+## Installation Commands
+
+```bash
+# Install all dependencies
+npm run install:all
+
+# Or install individually
+cd web-app && npm install
+cd web-api && npm install
+```
+
+---
+
+**Note**: All dependencies are listed in their respective `package.json` files with exact versions to ensure consistent builds across environments.
 
 ---
 

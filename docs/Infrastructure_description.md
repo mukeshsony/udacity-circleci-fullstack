@@ -1,16 +1,157 @@
 # Infrastructure Description
 
-This document provides a comprehensive overview of the AWS infrastructure required to host and run the full-stack application, including the Angular frontend, Node.js backend API, and PostgreSQL database.
+This document describes the infrastructure services required to host and run the full-stack MyStore application.
 
 ---
 
-## Infrastructure Overview
+## What Services Does This Project Need to Run?
 
-The application uses a three-tier architecture deployed on AWS:
+The application requires **4 essential infrastructure services** to operate:
 
-1. **Presentation Tier**: Static frontend hosted on S3 with CloudFront CDN
-2. **Application Tier**: Node.js API hosted on Elastic Beanstalk with auto-scaling
-3. **Data Tier**: PostgreSQL database hosted on RDS with Multi-AZ deployment
+### 1. **AWS S3 (Simple Storage Service)** - Frontend Hosting
+
+**Purpose**: Hosts the compiled Angular application as a static website
+
+**Why We Need It**:
+- Stores all frontend files (HTML, CSS, JavaScript, images)
+- Serves the Angular single-page application to users
+- Provides static website hosting capability
+- Low-cost, highly available storage solution
+
+**Configuration**:
+- **Bucket Name**: `udacity-web-app`
+- **Region**: `us-east-1`
+- **Website Hosting**: Enabled with `index.html` as entry point
+- **Public Access**: Files are publicly readable for website access
+- **Content**: Angular build output from `dist/mystore-angular/browser/`
+
+**Role in Application**: Users access the website through S3, which delivers the Angular frontend to their browsers.
+
+---
+
+### 2. **AWS Elastic Beanstalk** - Backend API Hosting
+
+**Purpose**: Hosts and manages the Node.js/Express backend API
+
+**Why We Need It**:
+- Runs the Node.js 20 server application
+- Manages EC2 instances automatically
+- Handles load balancing and auto-scaling
+- Provides easy deployment and monitoring
+- Manages application health checks
+
+**Configuration**:
+- **Application Name**: `udacity-backend`
+- **Environment Name**: `mystore-udacity`
+- **Platform**: Node.js 20 running on Amazon Linux 2023
+- **Instance Type**: Auto-scaled EC2 instances
+- **Port**: 8080 (Node.js server)
+
+**What It Runs**:
+- Express.js REST API server
+- JWT authentication middleware
+- Business logic for orders, products, users
+- Database connection pooling
+
+**Role in Application**: Processes all API requests from the frontend, handles authentication, manages business logic, and communicates with the database.
+
+---
+
+### 3. **AWS RDS (Relational Database Service)** - PostgreSQL Database
+
+**Purpose**: Managed PostgreSQL database for persistent data storage
+
+**Why We Need It**:
+- Stores all application data (users, products, orders)
+- Provides reliable, managed database service
+- Handles automatic backups and updates
+- Ensures data persistence across deployments
+
+**Configuration**:
+- **Database Identifier**: `udacity-app`
+- **Engine**: PostgreSQL 16.3
+- **Instance Class**: db.t3.micro (or higher for production)
+- **Storage**: General Purpose SSD
+- **Endpoint**: `udacity-app.c5y4doddjbye.us-east-1.rds.amazonaws.com:5432`
+
+**Database Schema**:
+- `users` table - User accounts and authentication
+- `products` table - Product catalog
+- `orders` table - Customer orders
+- `order_products` table - Order line items (many-to-many relationship)
+
+**Role in Application**: Stores all persistent data and provides ACID-compliant transactions for data integrity.
+
+---
+
+### 4. **CircleCI** - CI/CD Pipeline Infrastructure
+
+**Purpose**: Automated build, test, and deployment pipeline
+
+**Why We Need It**:
+- Automates the entire deployment process
+- Runs tests automatically on every code push
+- Builds both frontend and backend applications
+- Deploys to AWS infrastructure automatically
+- Provides manual approval gates for production
+
+**What CircleCI Does**:
+1. **Build Phase**: Compiles TypeScript, builds Angular app
+2. **Test Phase**: Runs 81 frontend + 21 backend unit tests
+3. **Deploy Phase**: Pushes code to S3 and Elastic Beanstalk
+4. **Environment Management**: Sets environment variables in EB
+
+**Role in Application**: Serves as the automation layer that connects development to production, ensuring code quality through testing and enabling rapid, reliable deployments.
+
+---
+
+### 5. **AWS CloudFront (Optional but Recommended)** - CDN
+
+**Purpose**: Content Delivery Network for faster global access
+
+**Why We Need It**:
+- Caches frontend assets at edge locations worldwide
+- Reduces latency for users far from S3 bucket
+- Provides HTTPS support with free SSL certificates
+- Improves performance and reduces S3 costs
+
+**Configuration**:
+- **Distribution ID**: `E2R5142O5YUCP`
+- **Origin**: S3 bucket (`udacity-web-app`)
+- **Cache Behavior**: Cache frontend assets, invalidate on deployment
+
+**Role in Application**: Accelerates content delivery to end users by serving cached content from the nearest edge location.
+
+---
+
+## Infrastructure Architecture Summary
+
+The application uses a **three-tier architecture**:
+
+### **Presentation Tier** (Frontend)
+```
+Users → CloudFront (CDN) → S3 (Angular App)
+```
+- Serves the user interface
+- Handles client-side routing
+- Makes API calls to backend
+
+### **Application Tier** (Backend)
+```
+Frontend → Elastic Beanstalk (Node.js API)
+```
+- Processes business logic
+- Handles authentication (JWT)
+- Validates requests
+- Queries database
+
+### **Data Tier** (Database)
+```
+Backend API → RDS PostgreSQL (Data Storage)
+```
+- Stores persistent data
+- Manages data relationships
+- Ensures data integrity
 
 ---
 
