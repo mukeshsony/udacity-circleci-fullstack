@@ -507,10 +507,9 @@ jobs:
             fi
             echo "=========================================="
             echo "🚀 Starting S3 sync..."
-            echo "Command: aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ --delete --acl public-read --cache-control max-age=86400"
+            echo "Command: aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ --delete --cache-control max-age=86400"
             aws s3 sync dist/ s3://${AWS_S3_BUCKET}/ \
               --delete \
-              --acl public-read \
               --cache-control "max-age=86400"
             SYNC_EXIT=$?
             echo "=========================================="
