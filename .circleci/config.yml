@@ -446,7 +446,9 @@ jobs:
             echo "🏗️ Rebuilding frontend for deployment..."
             echo "=========================================="
             cd web-app
-            npm ci
+            npm ci --include=dev
+            echo "Installed packages:"
+            npm list --depth=0
             npm run build --configuration=production
             echo "=========================================="
             echo "Build artifacts:"
