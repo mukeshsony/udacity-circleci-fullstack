@@ -704,52 +704,43 @@ workflows:
   version: 2
   test-build-deploy:
     jobs:
-      # Test angular-app for debugging
-      - test-angular-app:
+      # Test and build phase (parallel)
+      - udacity-web-app:
           filters:
             branches:
               only:
                 - main
       
-      # TEMPORARILY DISABLED FOR DEBUGGING
-      # - udacity-web-app:
-      #     filters:
-      #       branches:
-      #         only:
-      #           - main
-      
-      # - udacity-web-api:
-      #     filters:
-      #       branches:
-      #         only:
-      #           - main
+      - udacity-web-api:
+          filters:
+            branches:
+              only:
+                - main
       
       # Manual approval gate
-      # TEMPORARILY DISABLED - requires udacity-web-app and udacity-web-api
-      # - hold-for-approval:
-      #     type: approval
-      #     requires:
-      #       - udacity-web-app
-      #       - udacity-web-api
-      #     filters:
-      #       branches:
-      #         only:
-      #           - main
+      - hold-for-approval:
+          type: approval
+          requires:
+            - udacity-web-app
+            - udacity-web-api
+          filters:
+            branches:
+              only:
+                - main
       
       # Deploy phase (parallel after approval)
-      # TEMPORARILY DISABLED - requires hold-for-approval
-      # - deploy-frontend:
-      #     requires:
-      #       - hold-for-approval
-      #     filters:
-      #       branches:
-      #         only:
-      #           - main
+      - deploy-frontend:
+          requires:
+            - hold-for-approval
+          filters:
+            branches:
+              only:
+                - main
       
-      # - deploy-backend:
-      #     requires:
-      #       - hold-for-approval
-      #     filters:
-      #       branches:
-      #         only:
-      #           - main
+      - deploy-backend:
+          requires:
+            - hold-for-approval
+          filters:
+            branches:
+              only:
+                - main
