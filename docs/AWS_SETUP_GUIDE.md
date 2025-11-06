@@ -174,7 +174,7 @@ This guide will walk you through setting up all the required AWS resources for t
    |-------|-------|
    | DB instance identifier | `udacity-app` |
    | Master username | `postgres` |
-   | Master password | `VEG9ZnH2sPI9dFgh` (choose a strong password) |
+   | Master password | `YOUR_SECURE_PASSWORD_HERE` (choose a strong password) |
 
 6. **Instance Configuration**
    | Field | Value |
@@ -260,12 +260,12 @@ DB_HOST=udacity-app.c5y4doddjbye.us-east-1.rds.amazonaws.com
 DB_PORT=5432
 DB_NAME=postgres
 DB_USERNAME=postgres
-DB_PASSWORD=VEG9ZnH2sPI9dFgh
+DB_PASSWORD=YOUR_SECURE_PASSWORD_HERE
 ```
 
 **Connection String Format:**
 ```
-postgresql://postgres:VEG9ZnH2sPI9dFgh@udacity-app.c5y4doddjbye.us-east-1.rds.amazonaws.com:5432/postgres
+postgresql://postgres:YOUR_SECURE_PASSWORD_HERE@udacity-app.c5y4doddjbye.us-east-1.rds.amazonaws.com:5432/postgres
 ```
 
 ---
@@ -331,8 +331,8 @@ postgresql://postgres:VEG9ZnH2sPI9dFgh@udacity-app.c5y4doddjbye.us-east-1.rds.am
    POSTGRES_PORT=5432
    POSTGRES_DB=postgres
    POSTGRES_USERNAME=postgres
-   POSTGRES_PASSWORD=VEG9ZnH2sPI9dFgh
-   JWT_SECRET=f3a9d2b1c8e47f5d6a1b9e3c7d4f8a2e5c1b7d6f9a3e2c4b8d5f6a7c9e1b0d3f
+   POSTGRES_PASSWORD=YOUR_SECURE_PASSWORD_HERE
+   JWT_SECRET=YOUR_GENERATED_JWT_SECRET_HERE
    ```
 
 3. **Apply Changes**
@@ -432,10 +432,10 @@ export POSTGRES_HOST=udacity-app.c5y4doddjbye.us-east-1.rds.amazonaws.com
 export POSTGRES_PORT=5432
 export POSTGRES_DB=postgres
 export POSTGRES_USERNAME=postgres
-export POSTGRES_PASSWORD=VEG9ZnH2sPI9dFgh
+export POSTGRES_PASSWORD=YOUR_SECURE_PASSWORD_HERE
 
 # Application Configuration
-export JWT_SECRET=f3a9d2b1c8e47f5d6a1b9e3c7d4f8a2e5c1b7d6f9a3e2c4b8d5f6a7c9e1b0d3f
+export JWT_SECRET=YOUR_GENERATED_JWT_SECRET_HERE
 export NODE_ENV=development
 export PORT=8080
 
@@ -508,12 +508,12 @@ Add these environment variables in CircleCI Project Settings:
    POSTGRES_PORT=5432
    POSTGRES_DB=postgres
    POSTGRES_USERNAME=postgres
-   POSTGRES_PASSWORD=VEG9ZnH2sPI9dFgh
+   POSTGRES_PASSWORD=YOUR_SECURE_PASSWORD_HERE
    ```
 
    **Application:**
    ```
-   JWT_SECRET=f3a9d2b1c8e47f5d6a1b9e3c7d4f8a2e5c1b7d6f9a3e2c4b8d5f6a7c9e1b0d3f
+   JWT_SECRET=YOUR_GENERATED_JWT_SECRET_HERE
    ```
 
 ---
