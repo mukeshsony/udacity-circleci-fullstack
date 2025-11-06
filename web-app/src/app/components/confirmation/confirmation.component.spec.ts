@@ -76,12 +76,21 @@ describe('ConfirmationComponent', () => {
   });
 
   it('should redirect to home if no order data', () => {
+    // Clear any stored order data first
+    sessionStorage.removeItem('orderData');
+    
     const router = TestBed.inject(Router);
     spyOn(router, 'navigate');
+    spyOn(router, 'getCurrentNavigation').and.returnValue(null);
+    
+    // Clear history state
+    history.replaceState(null, '', window.location.href);
     
     fixture = TestBed.createComponent(ConfirmationComponent);
     component = fixture.componentInstance;
-    // Don't set orderData - it should be undefined
+    
+    // Ensure orderData is not set
+    component.orderData = undefined;
     
     component.ngOnInit();
 
